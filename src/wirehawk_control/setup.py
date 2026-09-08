@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cdpr_node = wirehawk_control.cdpr_node:main',
+            'keyboard_teleop = wirehawk_control.keyboard_teleop:main',
         ],
     },
 )
