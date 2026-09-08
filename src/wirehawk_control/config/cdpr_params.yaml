@@ -1,0 +1,12 @@
+/**:
+  ros__parameters:
+    anchors: [
+      10.0,  10.0, 3.0,
+      10.0, -10.0, 3.0,
+     -10.0, -10.0, 3.0,
+     -10.0,  10.0, 3.0
+    ]
+    start_position: [0.0, 0.0, 1.5]
+    pretension_offset: 0.05
+    kp: 20.0
+    max_linear_speed: 1.0
