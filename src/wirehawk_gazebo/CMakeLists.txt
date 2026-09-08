@@ -14,15 +14,12 @@ find_package(gz-plugin2 REQUIRED)
 find_package(gz-math7 REQUIRED)
 
 # Compile C++ plugins 
-add_library(CableDummyPlugin SHARED src/CableDummyPlugin.cc)
-target_include_directories(CableDummyPlugin PUBLIC ${gz-sim8_INCLUDE_DIRS})
-target_link_libraries(CableDummyPlugin PUBLIC gz-sim8::core gz-plugin2::gz-plugin2 gz-math7::gz-math7)
 
 add_library(CableSpringPlugin SHARED src/CableSpringPlugin.cc)
 target_include_directories(CableSpringPlugin PUBLIC ${gz-sim8_INCLUDE_DIRS})
 target_link_libraries(CableSpringPlugin PUBLIC gz-sim8::core gz-plugin2::gz-plugin2 gz-math7::gz-math7)
 
-install(TARGETS CableDummyPlugin CableSpringPlugin DESTINATION lib)
+install(TARGETS CableSpringPlugin DESTINATION lib)
 # ------------------------------
 
 install(DIRECTORY

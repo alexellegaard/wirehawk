@@ -1,12 +1,15 @@
 /**:
   ros__parameters:
     anchors: [
-      10.0,  10.0, 3.0,
-      10.0, -10.0, 3.0,
-     -10.0, -10.0, 3.0,
-     -10.0,  10.0, 3.0
+       10.0,  10.0, 3.0,
+       10.0, -10.0, 3.0,
+      -10.0, -10.0, 3.0,
+      -10.0,  10.0, 3.0
     ]
     start_position: [0.0, 0.0, 1.5]
+    workspace_min: [-7.0, -7.0, 0.3]
+    workspace_max: [ 7.0,  7.0, 2.7]
     pretension_offset: 0.05
-    kp: 20.0
     max_linear_speed: 1.0
+    rate_hz: 50.0
+    cmd_timeout: 0.2
