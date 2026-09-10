@@ -25,6 +25,7 @@ setup(
         'console_scripts': [
             'cdpr_node = wirehawk_control.cdpr_node:main',
             'keyboard_teleop = wirehawk_control.keyboard_teleop:main',
+            'trajectory_planner = wirehawk_control.trajectory_planner:main',
         ],
     },
 )
