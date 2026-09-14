@@ -4,6 +4,7 @@
 #include <gz/sim/Util.hh>
 #include <gz/sim/components/ExternalWorldWrenchCmd.hh>
 #include <gz/sim/components/Pose.hh>
+#include <gz/sim/components/LinearVelocity.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/plugin/Register.hh>
@@ -22,18 +23,15 @@ namespace wirehawk {
         public gz::sim::ISystemPreUpdate 
   {
   private:
-    gz::sim::Entity payload_link_entity_;
+    gz::sim::Entity payload_link_entity_{gz::sim::kNullEntity};
     std::vector<gz::sim::Entity> cable_models_;
     std::vector<gz::math::Vector3d> anchors_;
     
     size_t num_cables_ = 0;
-    std::vector<double> prev_L_act_;
     std::vector<double> L0_;
-    std::vector<double> prev_L0_;
-    std::vector<bool> received_first_cmd_;
 
-    double K_ = 5000.0;
-    double C_ = 800.0;
+    double K_ = 500.0;  // Spring coefficient
+    double C_ = 2000.0;  // Damping coefficient
 
     gz::transport::Node node_;
     std::mutex msg_mutex_;
@@ -44,7 +42,6 @@ namespace wirehawk {
                    gz::sim::EntityComponentManager &_ecm,
                    gz::sim::EventManager & /*_eventMgr*/) override 
     {
-      // 1. Read optional configurable parameters from SDF
       if (_sdf) {
         if (_sdf->HasElement("stiffness")) {
           K_ = _sdf->Get<double>("stiffness");
@@ -62,7 +59,7 @@ namespace wirehawk {
         return;
       }
 
-      // Discover 4 single visual cable models
+      // Discover cable visual markers
       for (int i = 0; i < 4; ++i) {
         std::string c_name = "cable_vis_" + std::to_string(i);
         gz::sim::Entity c_ent = gz::sim::kNullEntity;
@@ -104,43 +101,33 @@ namespace wirehawk {
         return;
       }
 
-      // 2. Compute initial cable lengths dynamically from actual spawn positions
-      gz::sim::Link payload(payload_link_entity_);
+      // Compute initial resting lengths from spawn pose
       gz::math::Vector3d p0 = gz::sim::worldPose(payload_link_entity_, _ecm).Pos();
-
-      prev_L_act_.assign(num_cables_, 0.0);
       L0_.resize(num_cables_);
-      prev_L0_.resize(num_cables_);
-      received_first_cmd_.assign(num_cables_, false);
 
       for (size_t i = 0; i < num_cables_; ++i) {
-        double dist0 = (anchors_[i] - p0).Length();
-        L0_[i] = dist0;
-        prev_L0_[i] = dist0;
+        L0_[i] = (anchors_[i] - p0).Length();
       }
 
       if (!_ecm.Component<gz::sim::components::ExternalWorldWrenchCmd>(payload_link_entity_)) {
         _ecm.CreateComponent(payload_link_entity_, gz::sim::components::ExternalWorldWrenchCmd());
       }
 
+      // Enable linear velocity component tracking if absent
+      gz::sim::enableComponent<gz::sim::components::LinearVelocity>(_ecm, payload_link_entity_);
+
       for (size_t i = 0; i < num_cables_; ++i) {
         std::string topic = "/cdpr/l" + std::to_string(i);
         std::function<void(const gz::msgs::Double &)> cb = [this, i](const gz::msgs::Double &_msg) {
           std::lock_guard<std::mutex> lock(this->msg_mutex_);
           if (i < this->L0_.size()) {
-            double val = std::max(1.0, _msg.data());
-            if (!this->received_first_cmd_[i]) {
-              this->prev_L0_[i] = val;
-              this->received_first_cmd_[i] = true;
-            }
-            this->L0_[i] = val;
+            this->L0_[i] = std::max(0.1, _msg.data());
           }
         };
         node_.Subscribe(topic, cb);
       }
       
-      gzmsg << "CableSpringPlugin configured: K=" << K_ << ", C=" << C_ 
-            << ", initial lengths automatically computed from spawn pose.\n";
+      gzmsg << "CableSpringPlugin configured cleanly: K=" << K_ << ", C=" << C_ << "\n";
     }
 
     void PreUpdate(const gz::sim::UpdateInfo &_info,
@@ -153,8 +140,12 @@ namespace wirehawk {
       if (!poseOpt.has_value()) return;
 
       gz::math::Vector3d p = poseOpt.value().Pos();
+      
+      // Get physical velocity of payload directly from physics engine
+      auto velOpt = payload.WorldLinearVelocity(_ecm);
+      gz::math::Vector3d v = velOpt.has_value() ? velOpt.value() : gz::math::Vector3d::Zero;
+
       gz::math::Vector3d net_force(0.0, 0.0, 0.0);
-      double dt = std::chrono::duration<double>(_info.dt).count();
 
       std::vector<double> current_L0(num_cables_);
       {
@@ -165,33 +156,30 @@ namespace wirehawk {
       for (size_t i = 0; i < num_cables_; ++i) {
         gz::math::Vector3d l_vec = anchors_[i] - p;
         double L_act = l_vec.Length();
-        
-        double L_dot = 0.0;
-        double L0_dot = 0.0;
-        
-        if (dt > 0.0001 && prev_L_act_[i] > 0) {
-            L_dot = (L_act - prev_L_act_[i]) / dt;
-            L0_dot = (current_L0[i] - prev_L0_[i]) / dt;
-        }
-        
-        L_dot = std::clamp(L_dot, -20.0, 20.0);
-        L0_dot = std::clamp(L0_dot, -20.0, 20.0);
-        
-        prev_L_act_[i] = L_act;
-        prev_L0_[i] = current_L0[i];
+        if (L_act < 1e-4) continue;
 
-        double tension = K_ * (L_act - current_L0[i]) + C_ * (L_dot - L0_dot);
+        // Normalized unit vector pointing from payload TO anchor
+        gz::math::Vector3d u_vec = l_vec / L_act;
+
+        // Cable rate of change: projection of velocity along the cable line
+        // Moving TOWARDS anchor -> L_act shrinks (negative rate)
+        // Moving AWAY from anchor -> L_act grows (positive rate)
+        double L_dot = -u_vec.Dot(v);
+
+        // Spring-damper tension (Kelvin-Voigt)
+        double stretch = L_act - current_L0[i];
+        double tension = (K_ * stretch) + (C_ * L_dot);
+
+        // Cables only pull, never push
         if (tension < 0.0) tension = 0.0;
-        if (tension > 20000.0) tension = 20000.0;
+        if (tension > 15000.0) tension = 15000.0;
 
-        net_force += l_vec.Normalize() * tension;
+        net_force += u_vec * tension;
 
-        // Visual cable tracking
+        // Visual cable pose update
         if (i < cable_models_.size() && cable_models_[i] != gz::sim::kNullEntity) {
-          gz::math::Vector3d dir = l_vec.Normalize();
           gz::math::Quaterniond rot;
-          rot.SetFrom2Axes(gz::math::Vector3d::UnitZ, dir);
-
+          rot.SetFrom2Axes(gz::math::Vector3d::UnitZ, u_vec);
           gz::sim::Model cable_model(cable_models_[i]);
           cable_model.SetWorldPoseCmd(_ecm, gz::math::Pose3d(p, rot));
         }

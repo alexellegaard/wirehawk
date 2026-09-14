@@ -11,5 +11,6 @@
     workspace_max: [ 7.0,  7.0, 2.7]
     pretension_offset: 0.05
     max_linear_speed: 1.0
+    max_linear_accel: 0.5
     rate_hz: 50.0
     cmd_timeout: 0.2
