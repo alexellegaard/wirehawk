@@ -405,7 +405,8 @@ namespace wirehawk {
         gz::sim::Model seg_model(cable_segments_[_i][j]);
         seg_model.SetWorldPoseCmd(_ecm, gz::math::Pose3d(mid, rot));
 
-        // Resize the unit cylinder to the actual segment length.
+        // Resize the unit cylinder to the segment length plus a small overlap so
+        // consecutive cylinders fill the joint (no wedge gap at the bend).
         gz::sim::Entity visual = cable_visuals_[_i][j];
         if (visual != gz::sim::kNullEntity) {
           auto *geomComp = _ecm.Component<gz::sim::components::Geometry>(visual);
@@ -413,7 +414,7 @@ namespace wirehawk {
             sdf::Geometry geom = geomComp->Data();
             if (const sdf::Cylinder *cyl = geom.CylinderShape()) {
               sdf::Cylinder c = *cyl;
-              c.SetLength(segLen);
+              c.SetLength(segLen + 0.003);
               geom.SetCylinderShape(c);
               _ecm.SetComponentData<gz::sim::components::Geometry>(visual, geom);
             }
