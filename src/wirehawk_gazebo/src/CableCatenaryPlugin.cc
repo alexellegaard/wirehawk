@@ -6,9 +6,12 @@
 #include <gz/sim/components/Pose.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
+#include <gz/sim/components/Geometry.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/transport/Node.hh>
 #include <gz/msgs/double.pb.h>
+#include <sdf/Geometry.hh>
+#include <sdf/Cylinder.hh>
 #include <vector>
 #include <mutex>
 #include <algorithm>
@@ -27,24 +30,21 @@ namespace wirehawk {
 
   /// Elastic catenary cable element.
   ///
-  /// Replaces the old massless Kelvin-Voigt spring with a cable that has both
-  /// self-weight (linear density mu -> w = mu*g) and axial elasticity (EA).
-  /// Given the anchor A, payload P and the commanded unstretched length L0 it
+  /// Self-weight (linear density mu -> w = mu*g) plus axial elasticity (EA).
+  /// Given the anchor A, payload P and commanded unstretched length L0 it
   /// solves for the cable tension and returns the force the cable exerts on
   /// the payload (tension tangent at the payload end).
   ///
-  /// Model (Irvine, "Cable Structures"): the horizontal tension H is constant
-  /// along the cable; the vertical tension grows linearly with unstretched arc
-  /// length,  V(s) = Vp + w*s,  so Va = Vp + w*L0. The two projections are
-  ///   l = (H/w)*[asinh(Va/H) - asinh(Vp/H)] + H*L0/EA
-  ///   h = (H/w)*[sqrt(1+(Va/H)^2) - sqrt(1+(Vp/H)^2)] + (Vp*L0 + w*L0^2/2)/EA
-  /// solved for (H, Vp) with damped Newton. A slack cable (L0 >= chord) carries
-  /// no tension and returns zero force.
+  /// Slack handling: a cable whose straight chord is at or below L0 carries
+  /// no tension. The taut->slack switch is smoothed with a smoothstep ramp
+  /// over a small strain band (<slack_transition_strain>) so the stiffness
+  /// does not jump from 0 (slack) to ~EA/L0 (taut) instantaneously — a hard
+  /// jump excites a spurious bounce near the workspace edge.
   static CatenaryResult SolveCatenary(
       const gz::math::Vector3d &_anchor,
       const gz::math::Vector3d &_payload,
       double _L0, double _mu, double _EA,
-      double _g, double _maxTension)
+      double _g, double _maxTension, double _slackStrain)
   {
     CatenaryResult out;
     const double w = _mu * _g;                    // weight per unit length [N/m]
@@ -54,14 +54,26 @@ namespace wirehawk {
     const double h = d.Z();                        // vertical drop (anchor above payload)
     const double chord = std::sqrt(l*l + h*h);
 
-    // Slack: unstretched length already reaches the chord with no tension.
-    if (_L0 <= 0.0 || chord <= _L0)
+    if (_L0 <= 0.0)
       return out;
+
+    const double stretch = chord - _L0;
+    if (stretch <= 0.0)
+      return out;                                  // fully slack (zero force)
+
+    const double strain = stretch / _L0;
+
+    // Smoothstep ramp: 0 at slack, 1 once the cable is clearly taut.
+    double ramp = 1.0;
+    if (_slackStrain > 0.0 && strain < _slackStrain) {
+      const double t = strain / _slackStrain;
+      ramp = t * t * (3.0 - 2.0 * t);
+    }
 
     // Fallback: straight massless elastic cable (exact when sag -> 0).
     auto straightForce = [&]() -> gz::math::Vector3d {
-      double stretch = (l < 1e-9) ? (std::fabs(h) - _L0) : (chord - _L0);
-      double T = _EA * stretch / _L0;
+      double stretchL = (l < 1e-9) ? (std::fabs(h) - _L0) : (chord - _L0);
+      double T = _EA * stretchL / _L0;
       if (T < 0.0) T = 0.0;
       if (T > _maxTension) T = _maxTension;
       if (l < 1e-9)
@@ -69,10 +81,12 @@ namespace wirehawk {
       return d / chord * T;
     };
 
-    // Massless or vertical cable -> straight elastic (catenary degenerates).
-    if (w < 1e-12 || l < 1e-9) {
+    // Near-slack, massless, or vertical cable -> straight elastic (continuous
+    // through the slack boundary), scaled by the ramp. Avoids the catenary
+    // Newton solve in its near-singular low-tension regime.
+    if ((_slackStrain > 0.0 && strain < _slackStrain) || w < 1e-12 || l < 1e-9) {
       out.valid = true;
-      out.force = straightForce();
+      out.force = straightForce() * ramp;
       return out;
     }
 
@@ -140,7 +154,7 @@ namespace wirehawk {
     double Tp = std::sqrt(H*H + Vp*Vp);
     if (!converged && (Tp <= 0.0 || !std::isfinite(Tp))) {
       out.valid = true;
-      out.force = straightForce();
+      out.force = straightForce() * ramp;
       return out;
     }
     if (Tp > _maxTension) { double s = _maxTension / Tp; H *= s; Vp *= s; }
@@ -148,6 +162,7 @@ namespace wirehawk {
     out.valid = true;
     out.force = gz::math::Vector3d(d.X()/l, d.Y()/l, 0.0) * H
               + gz::math::Vector3d(0.0, 0.0, 1.0) * Vp;
+    out.force *= ramp;
     return out;
   }
 
@@ -158,7 +173,13 @@ namespace wirehawk {
   {
   private:
     gz::sim::Entity payload_link_entity_{gz::sim::kNullEntity};
-    std::vector<gz::sim::Entity> cable_models_;
+
+    // Per-cable chain of visual segment models: cable_segments_[i][j] is the
+    // j-th segment MODEL of cable i; cable_visuals_[i][j] is its visual entity
+    // (whose cylinder geometry is resized each step).
+    std::vector<std::vector<gz::sim::Entity>> cable_segments_;
+    std::vector<std::vector<gz::sim::Entity>> cable_visuals_;
+
     std::vector<gz::math::Vector3d> anchors_;
 
     size_t num_cables_ = 0;
@@ -166,16 +187,22 @@ namespace wirehawk {
 
     // All values come from the world SDF (<plugin> block) — single source of
     // truth. No code defaults, so a missing value fails loudly.
-    double linear_density_ = 0.0;    // kg/m  cable mass per metre (weight -> sag)
-    double axial_stiffness_ = 0.0;   // N     E*A, cable axial rigidity (stretch)
-    double max_tension_ = 0.0;       // N     safety clamp on cable force
-    double payload_drag_ = 0.0;      // N*s/m world-frame drag (settling)
-    double anchor_height_ = 0.0;     // m     z of the anchor (top of the mast)
-    double gravity_ = 0.0;           // m/s^2 gravity magnitude for cable self-weight
+    double linear_density_ = 0.0;         // kg/m  cable mass per metre (weight -> sag)
+    double axial_stiffness_ = 0.0;        // N     E*A, cable axial rigidity (stretch)
+    double max_tension_ = 0.0;            // N     safety clamp on cable force
+    double payload_drag_ = 0.0;           // N*s/m world-frame drag (settling)
+    double anchor_height_ = 0.0;          // m     z of the anchor (top of the mast)
+    double gravity_ = 0.0;                // m/s^2 gravity magnitude for cable self-weight
+    double slack_transition_strain_ = 0.0;// [-]   strain band for the smooth taut->slack ramp
 
     gz::math::Vector3d prev_pos_{gz::math::Vector3d::Zero};
     std::chrono::steady_clock::duration last_time_{0};
     bool have_prev_ = false;
+
+    // Visual update throttle (30 Hz) — geometry resize every physics step is
+    // wasteful and can slow the renderer.
+    std::chrono::steady_clock::duration last_visual_time_{0};
+    bool have_visual_time_ = false;
 
     gz::transport::Node node_;
     std::mutex msg_mutex_;
@@ -186,8 +213,6 @@ namespace wirehawk {
                    gz::sim::EntityComponentManager &_ecm,
                    gz::sim::EventManager & /*_eventMgr*/) override
     {
-      // Read all cable/world params from SDF; a missing value aborts (the SDF
-      // is the single source of truth — no silent defaults).
       bool missing = false;
       auto readParam = [&](const char *_name, double &_out) {
         if (_sdf && _sdf->HasElement(_name)) {
@@ -203,6 +228,7 @@ namespace wirehawk {
       readParam("payload_drag", payload_drag_);
       readParam("anchor_height", anchor_height_);
       readParam("gravity", gravity_);
+      readParam("slack_transition_strain", slack_transition_strain_);
       if (missing) return;
 
       gz::sim::Model model(_entity);
@@ -213,20 +239,44 @@ namespace wirehawk {
         return;
       }
 
-      // Discover cable visual markers
-      for (int i = 0; i < 4; ++i) {
-        std::string c_name = "cable_vis_" + std::to_string(i);
-        gz::sim::Entity c_ent = gz::sim::kNullEntity;
+      auto findModelByName = [&](const std::string &_name) -> gz::sim::Entity {
+        gz::sim::Entity result = gz::sim::kNullEntity;
         _ecm.Each<gz::sim::components::Model, gz::sim::components::Name>(
           [&](const gz::sim::Entity &_ent, const gz::sim::components::Model *,
               const gz::sim::components::Name *_nameComp) -> bool {
-            if (_nameComp->Data() == c_name) {
-              c_ent = _ent;
+            if (_nameComp->Data() == _name) {
+              result = _ent;
               return false;
             }
             return true;
           });
-        cable_models_.push_back(c_ent);
+        return result;
+      };
+
+      // Discover the visual cable segments: cable_vis_<i>_<j> for j = 0,1,...
+      // (the SDF defines a chain of unit-length cylinders per cable).
+      for (int i = 0; i < 4; ++i) {
+        std::vector<gz::sim::Entity> segs;
+        std::vector<gz::sim::Entity> visuals;
+        for (int j = 0; ; ++j) {
+          std::string name = "cable_vis_" + std::to_string(i) + "_" + std::to_string(j);
+          gz::sim::Entity ent = findModelByName(name);
+          if (ent == gz::sim::kNullEntity) break;
+
+          // Resolve the segment's visual entity (for runtime cylinder resize).
+          gz::sim::Entity visual = gz::sim::kNullEntity;
+          gz::sim::Model m(ent);
+          auto links = m.Links(_ecm);
+          if (!links.empty()) {
+            gz::sim::Link link(links[0]);
+            auto vis = link.Visuals(_ecm);
+            if (!vis.empty()) visual = vis[0];
+          }
+          segs.push_back(ent);
+          visuals.push_back(visual);
+        }
+        cable_segments_.push_back(segs);
+        cable_visuals_.push_back(visuals);
       }
 
       // Discover pillars
@@ -245,7 +295,6 @@ namespace wirehawk {
 
         if (pillar_entity != gz::sim::kNullEntity) {
           gz::math::Pose3d pose = gz::sim::worldPose(pillar_entity, _ecm);
-          // Anchor sits at the top of the mast: pillar x/y (center) at anchor_height.
           anchors_.push_back(gz::math::Vector3d(pose.Pos().X(), pose.Pos().Y(), anchor_height_));
         }
       }
@@ -256,8 +305,6 @@ namespace wirehawk {
         return;
       }
 
-      // Initial unstretched lengths from spawn pose (no pretension; the payload
-      // sags to equilibrium as the cables load, same as the old model).
       gz::math::Vector3d p0 = gz::sim::worldPose(payload_link_entity_, _ecm).Pos();
       L0_.resize(num_cables_);
       for (size_t i = 0; i < num_cables_; ++i) {
@@ -282,7 +329,76 @@ namespace wirehawk {
       gzmsg << "CableCatenaryPlugin configured: mu=" << linear_density_
             << " kg/m, EA=" << axial_stiffness_ << " N, max_tension=" << max_tension_
             << " N, payload_drag=" << payload_drag_ << " N*s/m, anchor_h=" << anchor_height_
-            << " m, g=" << gravity_ << "\n";
+            << " m, g=" << gravity_ << ", slack_transition_strain=" << slack_transition_strain_
+            << "\n";
+    }
+
+    /// Position one cable's visual segments along a parabolic sag curve from
+    /// the payload to its anchor, resizing each cylinder to its segment length.
+    void UpdateVisual(size_t _i, const gz::math::Vector3d &_p,
+                      const CatenaryResult &_res,
+                      gz::sim::EntityComponentManager &_ecm)
+    {
+      const size_t n = cable_segments_[_i].size();
+      if (n == 0) return;
+
+      const gz::math::Vector3d a = anchors_[_i];
+      const gz::math::Vector3d d = a - _p;
+      const double l = std::sqrt(d.X()*d.X() + d.Y()*d.Y());
+      const double chord = d.Length();
+      if (chord < 1e-6) return;
+
+      // Mid-span sag of a uniform cable under horizontal tension H:
+      //   sag = w*l^2/(8H).  H is the horizontal magnitude of the cable force.
+      const double w = linear_density_ * gravity_;
+      const double H = std::sqrt(_res.force.X()*_res.force.X() +
+                                 _res.force.Y()*_res.force.Y());
+      double sagMax = 0.0;
+      if (H > 1e-6) {
+        sagMax = w * l * l / (8.0 * H);
+        if (sagMax > 0.4 * chord) sagMax = 0.4 * chord;
+      } else {
+        sagMax = 0.35 * chord;   // slack cable: visibly drooping
+      }
+
+      auto sagAt = [&](double t) { return 4.0 * sagMax * t * (1.0 - t); };
+
+      for (size_t j = 0; j < n; ++j) {
+        const double t0 = (double)j / (double)n;
+        const double t1 = (double)(j + 1) / (double)n;
+        gz::math::Vector3d p0 = _p + d * t0 - gz::math::Vector3d(0.0, 0.0, sagAt(t0));
+        gz::math::Vector3d p1 = _p + d * t1 - gz::math::Vector3d(0.0, 0.0, sagAt(t1));
+        gz::math::Vector3d seg = p1 - p0;
+        const double segLen = seg.Length();
+        if (segLen < 1e-6) continue;
+
+        const gz::math::Vector3d mid = 0.5 * (p0 + p1);
+        const gz::math::Vector3d u = seg / segLen;
+
+        gz::math::Quaterniond rot;
+        if (std::fabs(u.Z()) < 0.999)
+          rot.SetFrom2Axes(gz::math::Vector3d::UnitZ, u);
+        else
+          rot.SetFrom2Axes(gz::math::Vector3d::UnitX, u);
+
+        gz::sim::Model seg_model(cable_segments_[_i][j]);
+        seg_model.SetWorldPoseCmd(_ecm, gz::math::Pose3d(mid, rot));
+
+        // Resize the unit cylinder to the actual segment length.
+        gz::sim::Entity visual = cable_visuals_[_i][j];
+        if (visual != gz::sim::kNullEntity) {
+          auto *geomComp = _ecm.Component<gz::sim::components::Geometry>(visual);
+          if (geomComp) {
+            sdf::Geometry geom = geomComp->Data();
+            if (const sdf::Cylinder *cyl = geom.CylinderShape()) {
+              sdf::Cylinder c = *cyl;
+              c.SetLength(segLen);
+              geom.SetCylinderShape(c);
+              _ecm.SetComponentData<gz::sim::components::Geometry>(visual, geom);
+            }
+          }
+        }
+      }
     }
 
     void PreUpdate(const gz::sim::UpdateInfo &_info,
@@ -296,10 +412,6 @@ namespace wirehawk {
 
       gz::math::Vector3d p = poseOpt.value().Pos();
 
-      // Velocity via finite difference of the world pose. The LinearVelocity
-      // component is not reliably populated by the physics engine in PreUpdate,
-      // so WorldLinearVelocity() returns zero here (which silently killed the
-      // old model's C*L_dot damping too).
       double dt = 0.0;
       if (have_prev_) {
         dt = std::chrono::duration<double>(_info.simTime - last_time_).count();
@@ -319,29 +431,33 @@ namespace wirehawk {
         current_L0 = L0_;
       }
 
+      // Throttle the visual to ~30 Hz (geometry resize each physics step is
+      // wasteful and can slow the renderer).
+      bool update_visual = false;
+      if (have_visual_time_) {
+        double dt_vis = std::chrono::duration<double>(_info.simTime - last_visual_time_).count();
+        update_visual = (dt_vis >= 1.0 / 30.0);
+      } else {
+        update_visual = true;
+      }
+      if (update_visual) {
+        last_visual_time_ = _info.simTime;
+        have_visual_time_ = true;
+      }
+
       for (size_t i = 0; i < num_cables_; ++i) {
         CatenaryResult res = SolveCatenary(anchors_[i], p, current_L0[i],
-                                           linear_density_, axial_stiffness_, gravity_, max_tension_);
+                                           linear_density_, axial_stiffness_,
+                                           gravity_, max_tension_,
+                                           slack_transition_strain_);
         if (res.valid)
           net_force += res.force;
 
-        // Visual: straight chord from payload toward anchor (sag not drawn).
-        if (i < cable_models_.size() && cable_models_[i] != gz::sim::kNullEntity) {
-          gz::math::Vector3d u = anchors_[i] - p;
-          const double L = u.Length();
-          // Guard: SetFrom2Axes is degenerate when u is (anti)parallel to UnitZ.
-          if (L > 1e-6 && std::fabs(u.Z() / L) < 0.999) {
-            u /= L;
-            gz::math::Quaterniond rot;
-            rot.SetFrom2Axes(gz::math::Vector3d::UnitZ, u);
-            gz::sim::Model cable_model(cable_models_[i]);
-            cable_model.SetWorldPoseCmd(_ecm, gz::math::Pose3d(p, rot));
-          }
-        }
+        if (update_visual)
+          UpdateVisual(i, p, res, _ecm);
       }
 
-      // World-frame drag: damps all modes uniformly (energy dissipation so the
-      // otherwise-conservative cable system settles).
+      // World-frame drag: damps all modes uniformly.
       net_force -= v * payload_drag_;
 
       gz::msgs::Wrench wrench_msg;
