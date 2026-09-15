@@ -1,8 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <world name="wirehawk_world">
-    
-    <!-- Physics Configuration -->
+  <world name="wirehawk_world_70x70_5m">
+    <!-- Footprint 70x70, 5m masts: 70x70 m square, mast height 5.0 m -->
     <physics name="1ms" type="ignored">
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1.0</real_time_factor>
@@ -10,8 +9,7 @@
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
-    
-    <!-- Environment & Lighting -->
+
     <scene>
       <ambient>0.5 0.5 0.5 1.0</ambient>
       <background>0.7 0.8 0.95 1.0</background>
@@ -30,10 +28,10 @@
       <static>true</static>
       <link name="link">
         <collision name="collision">
-          <geometry><plane><normal>0 0 1</normal><size>25 25</size></plane></geometry>
+          <geometry><plane><normal>0 0 1</normal><size>80 80</size></plane></geometry>
         </collision>
         <visual name="visual">
-          <geometry><plane><normal>0 0 1</normal><size>25 25</size></plane></geometry>
+          <geometry><plane><normal>0 0 1</normal><size>80 80</size></plane></geometry>
           <material>
             <ambient>0.6 0.6 0.6 1</ambient>
             <diffuse>0.6 0.6 0.6 1</diffuse>
@@ -42,61 +40,57 @@
       </link>
     </model>
 
-    <!-- Pillar 1 (Top Right) -->
     <model name="pillar_1">
       <static>true</static>
-      <pose>10 10 1.5 0 0 0</pose>
+      <pose>35 35 2.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
-          <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.2</radius><length>5.0</length></cylinder></geometry>
           <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- Pillar 2 (Bottom Right) -->
     <model name="pillar_2">
       <static>true</static>
-      <pose>10 -10 1.5 0 0 0</pose>
+      <pose>35 -35 2.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
-          <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.2</radius><length>5.0</length></cylinder></geometry>
           <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- Pillar 3 (Bottom Left) -->
     <model name="pillar_3">
       <static>true</static>
-      <pose>-10 -10 1.5 0 0 0</pose>
+      <pose>-35 -35 2.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
-          <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.2</radius><length>5.0</length></cylinder></geometry>
           <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- Pillar 4 (Top Left) -->
     <model name="pillar_4">
       <static>true</static>
-      <pose>-10 10 1.5 0 0 0</pose>
+      <pose>-35 35 2.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
-          <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.2</radius><length>5.0</length></cylinder></geometry>
           <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <!-- 4 Visual Cable Models: Length 32m -->
+
     <model name="cable_vis_0">
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <pose>0 0 16.0 0 0 0</pose>
-          <geometry><cylinder><radius>0.015</radius><length>32.0</length></cylinder></geometry>
+          <pose>0 0 25.0 0 0 0</pose>
+          <geometry><cylinder><radius>0.015</radius><length>50.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -106,8 +100,8 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <pose>0 0 16.0 0 0 0</pose>
-          <geometry><cylinder><radius>0.015</radius><length>32.0</length></cylinder></geometry>
+          <pose>0 0 25.0 0 0 0</pose>
+          <geometry><cylinder><radius>0.015</radius><length>50.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -117,8 +111,8 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <pose>0 0 16.0 0 0 0</pose>
-          <geometry><cylinder><radius>0.015</radius><length>32.0</length></cylinder></geometry>
+          <pose>0 0 25.0 0 0 0</pose>
+          <geometry><cylinder><radius>0.015</radius><length>50.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -128,17 +122,18 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <pose>0 0 16.0 0 0 0</pose>
-          <geometry><cylinder><radius>0.015</radius><length>32.0</length></cylinder></geometry>
+          <pose>0 0 25.0 0 0 0</pose>
+          <geometry><cylinder><radius>0.015</radius><length>50.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
     </model>
 
+
     <!-- The Payload (Point Mass) -->
     <model name="payload">
       <pose>0 0 1.5 0 0 0</pose>
-      
+
       <link name="mass_link">
         <inertial>
           <mass>10.0</mass>
@@ -156,19 +151,14 @@
         </visual>
       </link>
 
-      <!-- Elastic-catenary cable plugin: weighted + axially elastic cables.
-           linear_density  [kg/m] : cable mass per metre (weight -> sag)
-           axial_stiffness [N]    : E*A, cable axial rigidity (stretch)
-           max_tension     [N]    : safety clamp on per-cable force
-           payload_drag    [N*s/m]: world-frame drag so the system settles -->
       <plugin filename="libCableCatenaryPlugin.so" name="wirehawk::CableCatenaryPlugin">
         <linear_density>0.0058</linear_density>
         <axial_stiffness>707000.0</axial_stiffness>
         <max_tension>5000.0</max_tension>
         <payload_drag>50.0</payload_drag>
-        <anchor_height>3.0</anchor_height>
+        <anchor_height>5.0</anchor_height>
       </plugin>
-      
+
     </model>
 
   </world>

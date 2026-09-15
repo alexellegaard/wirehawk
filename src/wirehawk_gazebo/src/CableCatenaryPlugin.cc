@@ -168,6 +168,7 @@ namespace wirehawk {
     double axial_stiffness_ = 707000.0; // N     (= E*A; Dyneema ~100 GPa x 7.07 mm^2)
     double max_tension_ = 5000.0;       // N     safety clamp on cable force
     double payload_drag_ = 15.0;        // N*s/m world-frame drag for stability
+    double anchor_height_ = 3.0;        // m     z of the anchor (top of the mast)
     const double g_ = 9.80665;
 
     gz::math::Vector3d prev_pos_{gz::math::Vector3d::Zero};
@@ -195,6 +196,9 @@ namespace wirehawk {
         }
         if (_sdf->HasElement("payload_drag")) {
           payload_drag_ = _sdf->Get<double>("payload_drag");
+        }
+        if (_sdf->HasElement("anchor_height")) {
+          anchor_height_ = _sdf->Get<double>("anchor_height");
         }
       }
 
@@ -238,9 +242,8 @@ namespace wirehawk {
 
         if (pillar_entity != gz::sim::kNullEntity) {
           gz::math::Pose3d pose = gz::sim::worldPose(pillar_entity, _ecm);
-          gz::math::Vector3d pos = pose.Pos();
-          pos.Z() += 1.5; // Top of 3m pillar
-          anchors_.push_back(pos);
+          // Anchor sits at the top of the mast: pillar x/y (center) at anchor_height.
+          anchors_.push_back(gz::math::Vector3d(pose.Pos().X(), pose.Pos().Y(), anchor_height_));
         }
       }
 
@@ -275,7 +278,7 @@ namespace wirehawk {
 
       gzmsg << "CableCatenaryPlugin configured: mu=" << linear_density_
             << " kg/m, EA=" << axial_stiffness_ << " N, max_tension=" << max_tension_
-            << " N, payload_drag=" << payload_drag_ << " N*s/m\n";
+            << " N, payload_drag=" << payload_drag_ << " N*s/m, anchor_h=" << anchor_height_ << " m\n";
     }
 
     void PreUpdate(const gz::sim::UpdateInfo &_info,
