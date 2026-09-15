@@ -15,11 +15,11 @@ find_package(gz-math7 REQUIRED)
 
 # Compile C++ plugins 
 
-add_library(CableSpringPlugin SHARED src/CableSpringPlugin.cc)
-target_include_directories(CableSpringPlugin PUBLIC ${gz-sim8_INCLUDE_DIRS})
-target_link_libraries(CableSpringPlugin PUBLIC gz-sim8::core gz-plugin2::gz-plugin2 gz-math7::gz-math7)
+add_library(CableCatenaryPlugin SHARED src/CableCatenaryPlugin.cc)
+target_include_directories(CableCatenaryPlugin PUBLIC ${gz-sim8_INCLUDE_DIRS})
+target_link_libraries(CableCatenaryPlugin PUBLIC gz-sim8::core gz-plugin2::gz-plugin2 gz-math7::gz-math7)
 
-install(TARGETS CableSpringPlugin DESTINATION lib)
+install(TARGETS CableCatenaryPlugin DESTINATION lib)
 # ------------------------------
 
 install(DIRECTORY
