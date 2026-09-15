@@ -157,6 +157,7 @@
         <max_tension>5000.0</max_tension>
         <payload_drag>50.0</payload_drag>
         <anchor_height>5.0</anchor_height>
+        <gravity>9.80665</gravity>
       </plugin>
 
     </model>

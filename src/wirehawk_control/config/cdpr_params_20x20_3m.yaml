@@ -1,0 +1,20 @@
+# Wirehawk control params — world: 20x20 m footprint, 3 m masts (anchors z=3.0)
+# Anchors MUST match the pillar layout in wirehawk_world_20x20_3m.sdf
+cdpr_node:
+  ros__parameters:
+    anchors: [10.0, 10.0, 3.0, 10.0, -10.0, 3.0, -10.0, -10.0, 3.0, -10.0, 10.0, 3.0]
+    start_position: [0.0, 0.0, 1.5]
+    workspace_min: [-7.0, -7.0, 0.3]
+    workspace_max: [7.0, 7.0, 2.7]
+    max_linear_speed: 1.0
+    max_linear_accel: 0.5
+    rate_hz: 50.0
+    cmd_timeout: 0.2
+
+trajectory_planner:
+  ros__parameters:
+    max_linear_speed: 0.8
+    max_linear_accel: 1.0
+    goal_tolerance: 0.02
+    decel_distance: 0.3
+    rate_hz: 50.0

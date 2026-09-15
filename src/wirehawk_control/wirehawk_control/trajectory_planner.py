@@ -9,11 +9,12 @@ class TrajectoryPlanner(Node):
         super().__init__('trajectory_planner')
 
         # Parameters
-        self.declare_parameter('max_linear_speed', 0.8)       # m/s
-        self.declare_parameter('max_linear_accel', 1.0)       # m/s^2
-        self.declare_parameter('goal_tolerance', 0.02)        # 2 cm deadband
-        self.declare_parameter('decel_distance', 0.3)         # Deceleration zone (m)
-        self.declare_parameter('rate_hz', 50.0)
+        # All parameters come from the config yaml (single source of truth).
+        self.declare_parameter('max_linear_speed', rclpy.Parameter.Type.DOUBLE)   # m/s
+        self.declare_parameter('max_linear_accel', rclpy.Parameter.Type.DOUBLE)   # m/s^2
+        self.declare_parameter('goal_tolerance', rclpy.Parameter.Type.DOUBLE)     # 2 cm deadband
+        self.declare_parameter('decel_distance', rclpy.Parameter.Type.DOUBLE)     # Deceleration zone (m)
+        self.declare_parameter('rate_hz', rclpy.Parameter.Type.DOUBLE)
 
         self.max_speed = float(self.get_parameter('max_linear_speed').value)
         self.max_accel = float(self.get_parameter('max_linear_accel').value)

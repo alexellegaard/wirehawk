@@ -164,12 +164,14 @@ namespace wirehawk {
     size_t num_cables_ = 0;
     std::vector<double> L0_;
 
-    double linear_density_ = 0.0058;    // kg/m  (Dyneema DM20 3 mm ~5.8 g/m)
-    double axial_stiffness_ = 707000.0; // N     (= E*A; Dyneema ~100 GPa x 7.07 mm^2)
-    double max_tension_ = 5000.0;       // N     safety clamp on cable force
-    double payload_drag_ = 15.0;        // N*s/m world-frame drag for stability
-    double anchor_height_ = 3.0;        // m     z of the anchor (top of the mast)
-    const double g_ = 9.80665;
+    // All values come from the world SDF (<plugin> block) — single source of
+    // truth. No code defaults, so a missing value fails loudly.
+    double linear_density_ = 0.0;    // kg/m  cable mass per metre (weight -> sag)
+    double axial_stiffness_ = 0.0;   // N     E*A, cable axial rigidity (stretch)
+    double max_tension_ = 0.0;       // N     safety clamp on cable force
+    double payload_drag_ = 0.0;      // N*s/m world-frame drag (settling)
+    double anchor_height_ = 0.0;     // m     z of the anchor (top of the mast)
+    double gravity_ = 0.0;           // m/s^2 gravity magnitude for cable self-weight
 
     gz::math::Vector3d prev_pos_{gz::math::Vector3d::Zero};
     std::chrono::steady_clock::duration last_time_{0};
@@ -184,23 +186,24 @@ namespace wirehawk {
                    gz::sim::EntityComponentManager &_ecm,
                    gz::sim::EventManager & /*_eventMgr*/) override
     {
-      if (_sdf) {
-        if (_sdf->HasElement("linear_density")) {
-          linear_density_ = _sdf->Get<double>("linear_density");
+      // Read all cable/world params from SDF; a missing value aborts (the SDF
+      // is the single source of truth — no silent defaults).
+      bool missing = false;
+      auto readParam = [&](const char *_name, double &_out) {
+        if (_sdf && _sdf->HasElement(_name)) {
+          _out = _sdf->Get<double>(_name);
+        } else {
+          gzerr << "CableCatenaryPlugin: missing required <" << _name << "> parameter\n";
+          missing = true;
         }
-        if (_sdf->HasElement("axial_stiffness")) {
-          axial_stiffness_ = _sdf->Get<double>("axial_stiffness");
-        }
-        if (_sdf->HasElement("max_tension")) {
-          max_tension_ = _sdf->Get<double>("max_tension");
-        }
-        if (_sdf->HasElement("payload_drag")) {
-          payload_drag_ = _sdf->Get<double>("payload_drag");
-        }
-        if (_sdf->HasElement("anchor_height")) {
-          anchor_height_ = _sdf->Get<double>("anchor_height");
-        }
-      }
+      };
+      readParam("linear_density", linear_density_);
+      readParam("axial_stiffness", axial_stiffness_);
+      readParam("max_tension", max_tension_);
+      readParam("payload_drag", payload_drag_);
+      readParam("anchor_height", anchor_height_);
+      readParam("gravity", gravity_);
+      if (missing) return;
 
       gz::sim::Model model(_entity);
       payload_link_entity_ = model.LinkByName(_ecm, "mass_link");
@@ -278,7 +281,8 @@ namespace wirehawk {
 
       gzmsg << "CableCatenaryPlugin configured: mu=" << linear_density_
             << " kg/m, EA=" << axial_stiffness_ << " N, max_tension=" << max_tension_
-            << " N, payload_drag=" << payload_drag_ << " N*s/m, anchor_h=" << anchor_height_ << " m\n";
+            << " N, payload_drag=" << payload_drag_ << " N*s/m, anchor_h=" << anchor_height_
+            << " m, g=" << gravity_ << "\n";
     }
 
     void PreUpdate(const gz::sim::UpdateInfo &_info,
@@ -317,7 +321,7 @@ namespace wirehawk {
 
       for (size_t i = 0; i < num_cables_; ++i) {
         CatenaryResult res = SolveCatenary(anchors_[i], p, current_L0[i],
-                                           linear_density_, axial_stiffness_, g_, max_tension_);
+                                           linear_density_, axial_stiffness_, gravity_, max_tension_);
         if (res.valid)
           net_force += res.force;
 

@@ -12,14 +12,16 @@ class CDPRNode(Node):
         super().__init__('cdpr_node')
 
         # Parameters
+        # All parameters are provided by the config yaml (single source of
+        # truth) — typed with no default so a missing value fails loudly.
         self.declare_parameter('anchors', rclpy.Parameter.Type.DOUBLE_ARRAY)
-        self.declare_parameter('start_position', [0.0, 0.0, 1.5])
-        self.declare_parameter('workspace_min', [-7.0, -7.0, 0.3])
-        self.declare_parameter('workspace_max', [ 7.0,  7.0, 2.7])
-        self.declare_parameter('max_linear_speed', 1.0)
-        self.declare_parameter('max_linear_accel', 1.0)  # Slew-rate limit (m/s^2)
-        self.declare_parameter('rate_hz', 50.0)
-        self.declare_parameter('cmd_timeout', 0.2)
+        self.declare_parameter('start_position', rclpy.Parameter.Type.DOUBLE_ARRAY)
+        self.declare_parameter('workspace_min', rclpy.Parameter.Type.DOUBLE_ARRAY)
+        self.declare_parameter('workspace_max', rclpy.Parameter.Type.DOUBLE_ARRAY)
+        self.declare_parameter('max_linear_speed', rclpy.Parameter.Type.DOUBLE)
+        self.declare_parameter('max_linear_accel', rclpy.Parameter.Type.DOUBLE)  # Slew-rate limit (m/s^2)
+        self.declare_parameter('rate_hz', rclpy.Parameter.Type.DOUBLE)
+        self.declare_parameter('cmd_timeout', rclpy.Parameter.Type.DOUBLE)
 
         raw_anchors = self.get_parameter('anchors').value
         if not raw_anchors or len(raw_anchors) % 3 != 0:
