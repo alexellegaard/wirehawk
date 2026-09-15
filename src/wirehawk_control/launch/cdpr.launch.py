@@ -21,6 +21,7 @@ def generate_launch_description():
         launch_arguments={'world': world}.items()
     )
 
+    # Low-level controller: /cmd_vel -> cable lengths. Always running.
     cdpr_node = Node(
         package='wirehawk_control',
         executable='cdpr_node',
@@ -29,18 +30,17 @@ def generate_launch_description():
         output='screen'
     )
 
-    planner_node = Node(
-        package='wirehawk_control',
-        executable='trajectory_planner',
-        name='trajectory_planner',
-        parameters=[params_file],
-        output='screen'
-    )
+    # NOTE: trajectory_planner and keyboard_teleop are ALTERNATIVE /cmd_vel
+    # sources (goal-based vs manual) and must NOT run at the same time — the
+    # planner holds its initial pose and would cancel teleop input. Launch them
+    # manually:
+    #   ros2 run wirehawk_control keyboard_teleop
+    #   ros2 run wirehawk_control trajectory_planner --ros-args \
+    #       --params-file <install>/share/wirehawk_control/config/cdpr_params_<world>.yaml
 
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value='20x20_3m',
                               description='World variant: 20x20_3m, 20x20_5m, 70x70_3m, 70x70_5m'),
         sim_launch,
-        cdpr_node,
-        planner_node
+        cdpr_node
     ])

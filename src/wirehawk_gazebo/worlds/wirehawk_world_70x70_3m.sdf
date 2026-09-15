@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <world name="wirehawk_world_70x70">
+  <world name="wirehawk_world_70x70_3m">
     <!-- Footprint 70x70, 3m masts: 70x70 m square, mast height 3.0 m -->
     <physics name="1ms" type="ignored">
       <max_step_size>0.001</max_step_size>
