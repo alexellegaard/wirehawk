@@ -28,6 +28,12 @@ namespace wirehawk {
     gz::math::Vector3d force = gz::math::Vector3d::Zero;   // force ON the payload
   };
 
+  // Visual trim radii (must match the SDF payload sphere and pillar radii):
+  // the drawn cable starts at the sphere surface and ends at the pillar surface
+  // so it does not pierce the visuals.
+  static constexpr double kPayloadVisualRadius = 0.3;
+  static constexpr double kAnchorVisualRadius  = 0.2;
+
   /// Elastic catenary cable element.
   ///
   /// Self-weight (linear density mu -> w = mu*g) plus axial elasticity (EA).
@@ -347,6 +353,7 @@ namespace wirehawk {
       const double l = std::sqrt(d.X()*d.X() + d.Y()*d.Y());
       const double chord = d.Length();
       if (chord < 1e-6) return;
+      const gz::math::Vector3d d_hat = d / chord;
 
       // Mid-span sag of a uniform cable under horizontal tension H:
       //   sag = w*l^2/(8H).  H is the horizontal magnitude of the cable force.
@@ -356,18 +363,32 @@ namespace wirehawk {
       double sagMax = 0.0;
       if (H > 1e-6) {
         sagMax = w * l * l / (8.0 * H);
-        if (sagMax > 0.4 * chord) sagMax = 0.4 * chord;
+        if (sagMax > 0.15 * chord) sagMax = 0.15 * chord;
       } else {
-        sagMax = 0.35 * chord;   // slack cable: visibly drooping
+        sagMax = 0.10 * chord;   // slack: moderate droop (avoid sharp joint bends)
       }
+
+      // Sag direction = gravity projected perpendicular to the chord, so the
+      // cable still dips toward the ground when the chord is steep.
+      gz::math::Vector3d sagDir = gz::math::Vector3d(0.0, 0.0, -1.0)
+                                + d_hat.Z() * d_hat;
+      const double sagLen = sagDir.Length();
+      if (sagLen > 1e-9) sagDir /= sagLen;
+      else sagDir = gz::math::Vector3d(0.0, 0.0, -1.0);
+
+      // Trim the drawn cable to the visual surfaces so it does not pierce the
+      // payload sphere or the anchor pillar.
+      const gz::math::Vector3d p_start = _p + kPayloadVisualRadius * d_hat;
+      const gz::math::Vector3d a_end   = a - kAnchorVisualRadius  * d_hat;
+      const gz::math::Vector3d span = a_end - p_start;
 
       auto sagAt = [&](double t) { return 4.0 * sagMax * t * (1.0 - t); };
 
       for (size_t j = 0; j < n; ++j) {
         const double t0 = (double)j / (double)n;
         const double t1 = (double)(j + 1) / (double)n;
-        gz::math::Vector3d p0 = _p + d * t0 - gz::math::Vector3d(0.0, 0.0, sagAt(t0));
-        gz::math::Vector3d p1 = _p + d * t1 - gz::math::Vector3d(0.0, 0.0, sagAt(t1));
+        gz::math::Vector3d p0 = p_start + span * t0 + sagDir * sagAt(t0);
+        gz::math::Vector3d p1 = p_start + span * t1 + sagDir * sagAt(t1);
         gz::math::Vector3d seg = p1 - p0;
         const double segLen = seg.Length();
         if (segLen < 1e-6) continue;
