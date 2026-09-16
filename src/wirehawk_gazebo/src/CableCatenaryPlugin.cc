@@ -25,7 +25,8 @@ namespace wirehawk {
   /// Result of solving one cable's equilibrium.
   struct CatenaryResult {
     bool valid = false;                                    // false => slack (zero force)
-    gz::math::Vector3d force = gz::math::Vector3d::Zero;   // force ON the payload
+    gz::math::Vector3d force = gz::math::Vector3d::Zero;   // force ON the payload (clamped to max_tension)
+    double tension_unclamped = 0.0;                        // tension magnitude before the max_tension clamp
   };
 
   // Visual trim radii (must match the SDF payload sphere and pillar radii):
@@ -81,6 +82,7 @@ namespace wirehawk {
       double stretchL = (l < 1e-9) ? (std::fabs(h) - _L0) : (chord - _L0);
       double T = _EA * stretchL / _L0;
       if (T < 0.0) T = 0.0;
+      out.tension_unclamped = T;                       // raw tension before clamp
       if (T > _maxTension) T = _maxTension;
       if (l < 1e-9)
         return gz::math::Vector3d(0.0, 0.0, (h >= 0.0 ? 1.0 : -1.0)) * T;
@@ -93,6 +95,7 @@ namespace wirehawk {
     if ((_slackStrain > 0.0 && strain < _slackStrain) || w < 1e-12 || l < 1e-9) {
       out.valid = true;
       out.force = straightForce() * ramp;
+      out.tension_unclamped *= ramp;                 // ramp also scales the unclamped tension
       return out;
     }
 
@@ -161,8 +164,10 @@ namespace wirehawk {
     if (!converged && (Tp <= 0.0 || !std::isfinite(Tp))) {
       out.valid = true;
       out.force = straightForce() * ramp;
+      out.tension_unclamped *= ramp;
       return out;
     }
+    out.tension_unclamped = Tp;                       // raw tension before clamp
     if (Tp > _maxTension) { double s = _maxTension / Tp; H *= s; Vp *= s; }
 
     out.valid = true;
@@ -211,7 +216,8 @@ namespace wirehawk {
 
     gz::transport::Node node_;
     std::mutex msg_mutex_;
-    std::vector<gz::transport::Node::Publisher> tension_pubs_;
+    std::vector<gz::transport::Node::Publisher> tension_pubs_;       // clamped /cdpr/t{i}
+    std::vector<gz::transport::Node::Publisher> tension_unc_pubs_;   // unclamped /cdpr/t_unc{i}
 
   public:
     void Configure(const gz::sim::Entity &_entity,
@@ -320,8 +326,10 @@ namespace wirehawk {
       }
 
       // Publish per-cable tension (N) so it can be inspected (rqt / gz topic).
+      // /cdpr/t{i} = clamped (as applied); /cdpr/t_unc{i} = unclamped (raw, no clamp).
       for (size_t i = 0; i < num_cables_; ++i) {
         tension_pubs_.push_back(node_.Advertise<gz::msgs::Double>("/cdpr/t" + std::to_string(i)));
+        tension_unc_pubs_.push_back(node_.Advertise<gz::msgs::Double>("/cdpr/t_unc" + std::to_string(i)));
       }
 
       gzmsg << "CableCatenaryPlugin configured: mu=" << linear_density_
@@ -465,11 +473,16 @@ namespace wirehawk {
         if (update_visual)
           UpdateVisual(i, p, res, _ecm);
 
-        // Publish the per-cable tension magnitude (N); 0 when slack.
+        // Publish per-cable tension magnitude (N); 0 when slack.
         if (i < tension_pubs_.size()) {
           gz::msgs::Double tmsg;
           tmsg.set_data(res.force.Length());
           tension_pubs_[i].Publish(tmsg);
+        }
+        if (i < tension_unc_pubs_.size()) {
+          gz::msgs::Double umsg;
+          umsg.set_data(res.tension_unclamped);
+          tension_unc_pubs_[i].Publish(umsg);
         }
       }
 

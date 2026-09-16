@@ -38,7 +38,11 @@ def generate_launch_description():
                 '/cdpr/t0@std_msgs/msg/Float64[gz.msgs.Double',
                 '/cdpr/t1@std_msgs/msg/Float64[gz.msgs.Double',
                 '/cdpr/t2@std_msgs/msg/Float64[gz.msgs.Double',
-                '/cdpr/t3@std_msgs/msg/Float64[gz.msgs.Double'
+                '/cdpr/t3@std_msgs/msg/Float64[gz.msgs.Double',
+                '/cdpr/t_unc0@std_msgs/msg/Float64[gz.msgs.Double',
+                '/cdpr/t_unc1@std_msgs/msg/Float64[gz.msgs.Double',
+                '/cdpr/t_unc2@std_msgs/msg/Float64[gz.msgs.Double',
+                '/cdpr/t_unc3@std_msgs/msg/Float64[gz.msgs.Double'
             ],
             output='screen'
         )
