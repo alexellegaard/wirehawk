@@ -346,11 +346,12 @@ namespace wirehawk {
       const double w = linear_density_ * gravity_;
       const double H = std::sqrt(_res.force.X()*_res.force.X() +
                                  _res.force.Y()*_res.force.Y());
-      // Sag from the horizontal tension, floored so it stays bounded and smooth
-      // as the cable goes slack (no divergence, no taut/slack switch).
-      const double H_eff = std::max(H, 10.0);
-      double sagMax = w * l * l / (8.0 * H_eff);
-      if (sagMax > 0.3 * chord) sagMax = 0.3 * chord;
+      // Sag from the horizontal tension. Using (H + H_floor) instead of
+      // max(H, H_floor) keeps it smooth (no kink at the floor) and naturally
+      // bounded: at slack (H=0) it is w*l^2/(8*H_floor) ~ 0.7 m for a 70 m
+      // span — enough to read as "slack" without drooping through the floor.
+      // For H >> H_floor it converges to the physical w*l^2/(8H).
+      double sagMax = w * l * l / (8.0 * (H + 50.0));
 
       // Sag direction = gravity projected perpendicular to the chord, so the
       // cable still dips toward the ground when the chord is steep.
