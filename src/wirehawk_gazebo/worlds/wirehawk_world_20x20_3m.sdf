@@ -348,11 +348,363 @@
 
     
 
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
     <model name="cable_vis_0_0">
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -362,7 +714,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -372,7 +724,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -382,7 +734,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -392,7 +744,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -402,7 +754,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -412,7 +764,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -422,7 +774,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -432,7 +784,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -442,7 +794,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -452,7 +804,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -462,7 +814,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -472,7 +824,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -482,7 +834,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -492,7 +844,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -502,7 +854,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -512,7 +864,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -522,7 +874,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -532,7 +884,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -542,7 +894,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -552,7 +904,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -562,227 +914,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_22">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_23">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_24">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_25">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_26">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_27">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_28">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_29">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_30">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_31">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_32">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_33">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_34">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_35">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_36">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_37">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_38">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_39">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_40">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_41">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_42">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_0_43">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -792,7 +924,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -802,7 +934,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -812,7 +944,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -822,7 +954,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -832,7 +964,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -842,7 +974,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -852,7 +984,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -862,7 +994,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -872,7 +1004,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -882,7 +1014,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -892,7 +1024,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -902,7 +1034,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -912,7 +1044,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -922,7 +1054,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -932,7 +1064,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -942,7 +1074,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -952,7 +1084,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -962,7 +1094,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -972,7 +1104,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -982,7 +1114,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -992,7 +1124,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1002,227 +1134,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_22">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_23">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_24">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_25">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_26">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_27">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_28">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_29">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_30">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_31">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_32">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_33">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_34">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_35">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_36">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_37">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_38">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_39">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_40">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_41">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_42">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_1_43">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1232,7 +1144,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1242,7 +1154,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1252,7 +1164,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1262,7 +1174,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1272,7 +1184,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1282,7 +1194,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1292,7 +1204,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1302,7 +1214,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1312,7 +1224,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1322,7 +1234,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1332,7 +1244,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1342,7 +1254,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1352,7 +1264,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1362,7 +1274,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1372,7 +1284,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1382,7 +1294,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1392,7 +1304,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1402,7 +1314,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1412,7 +1324,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1422,7 +1334,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1432,7 +1344,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1442,227 +1354,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_22">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_23">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_24">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_25">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_26">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_27">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_28">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_29">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_30">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_31">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_32">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_33">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_34">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_35">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_36">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_37">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_38">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_39">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_40">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_41">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_42">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_2_43">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1672,7 +1364,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1682,7 +1374,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1692,7 +1384,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1702,7 +1394,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1712,7 +1404,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1722,7 +1414,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1732,7 +1424,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1742,7 +1434,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1752,7 +1444,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1762,7 +1454,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1772,7 +1464,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1782,7 +1474,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1792,7 +1484,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1802,7 +1494,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1812,7 +1504,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1822,7 +1514,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1832,7 +1524,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1842,7 +1534,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1852,7 +1544,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1862,7 +1554,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1872,7 +1564,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>
@@ -1882,227 +1574,7 @@
       <static>true</static>
       <link name="link">
         <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_22">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_23">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_24">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_25">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_26">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_27">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_28">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_29">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_30">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_31">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_32">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_33">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_34">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_35">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_36">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_37">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_38">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_39">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_40">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_41">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_42">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
-          <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="cable_vis_3_43">
-      <static>true</static>
-      <link name="link">
-        <visual name="v">
-          <geometry><cylinder><radius>0.015</radius><length>2.0</length></cylinder></geometry>
+          <geometry><cylinder><radius>0.015</radius><length>4.0</length></cylinder></geometry>
           <material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material>
         </visual>
       </link>

@@ -369,11 +369,11 @@ namespace wirehawk {
 
       auto sagAt = [&](double t) { return 4.0 * sagMax * t * (1.0 - t); };
 
-      // Active segments cover the trimmed span at ~2 m each. The SDF cylinders
-      // are a FIXED 2 m (no runtime geometry resize — the renderer did not
-      // reflect it). Unused segments are parked out of view.
+      // Active segments cover the trimmed span at ~4 m each (the SDF cylinders
+      // are a FIXED 4 m — no runtime geometry resize, which the renderer did not
+      // reflect). Unused segments are parked out of view.
       const int n_draw = std::min((int)n,
-          std::max(1, (int)std::ceil(span.Length() / 2.0)));
+          std::max(1, (int)std::ceil(span.Length() / 4.0)));
 
       for (size_t j = 0; j < n; ++j) {
         if ((int)j >= n_draw) {
