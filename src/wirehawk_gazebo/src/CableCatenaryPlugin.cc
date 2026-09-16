@@ -211,6 +211,7 @@ namespace wirehawk {
 
     gz::transport::Node node_;
     std::mutex msg_mutex_;
+    std::vector<gz::transport::Node::Publisher> tension_pubs_;
 
   public:
     void Configure(const gz::sim::Entity &_entity,
@@ -316,6 +317,11 @@ namespace wirehawk {
           }
         };
         node_.Subscribe(topic, cb);
+      }
+
+      // Publish per-cable tension (N) so it can be inspected (rqt / gz topic).
+      for (size_t i = 0; i < num_cables_; ++i) {
+        tension_pubs_.push_back(node_.Advertise<gz::msgs::Double>("/cdpr/t" + std::to_string(i)));
       }
 
       gzmsg << "CableCatenaryPlugin configured: mu=" << linear_density_
@@ -458,6 +464,13 @@ namespace wirehawk {
 
         if (update_visual)
           UpdateVisual(i, p, res, _ecm);
+
+        // Publish the per-cable tension magnitude (N); 0 when slack.
+        if (i < tension_pubs_.size()) {
+          gz::msgs::Double tmsg;
+          tmsg.set_data(res.force.Length());
+          tension_pubs_[i].Publish(tmsg);
+        }
       }
 
       // World-frame drag: damps all modes uniformly.
