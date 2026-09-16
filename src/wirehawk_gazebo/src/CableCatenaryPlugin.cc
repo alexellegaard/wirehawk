@@ -184,7 +184,6 @@ namespace wirehawk {
     // j-th segment MODEL of cable i; cable_visuals_[i][j] is its visual entity
     // (whose cylinder geometry is resized each step).
     std::vector<std::vector<gz::sim::Entity>> cable_segments_;
-    std::vector<std::vector<gz::sim::Entity>> cable_visuals_;
 
     std::vector<gz::math::Vector3d> anchors_;
 
@@ -263,26 +262,13 @@ namespace wirehawk {
       // (the SDF defines a chain of unit-length cylinders per cable).
       for (int i = 0; i < 4; ++i) {
         std::vector<gz::sim::Entity> segs;
-        std::vector<gz::sim::Entity> visuals;
         for (int j = 0; ; ++j) {
           std::string name = "cable_vis_" + std::to_string(i) + "_" + std::to_string(j);
           gz::sim::Entity ent = findModelByName(name);
           if (ent == gz::sim::kNullEntity) break;
-
-          // Resolve the segment's visual entity (for runtime cylinder resize).
-          gz::sim::Entity visual = gz::sim::kNullEntity;
-          gz::sim::Model m(ent);
-          auto links = m.Links(_ecm);
-          if (!links.empty()) {
-            gz::sim::Link link(links[0]);
-            auto vis = link.Visuals(_ecm);
-            if (!vis.empty()) visual = vis[0];
-          }
           segs.push_back(ent);
-          visuals.push_back(visual);
         }
         cable_segments_.push_back(segs);
-        cable_visuals_.push_back(visuals);
       }
 
       // Discover pillars
@@ -360,13 +346,11 @@ namespace wirehawk {
       const double w = linear_density_ * gravity_;
       const double H = std::sqrt(_res.force.X()*_res.force.X() +
                                  _res.force.Y()*_res.force.Y());
-      double sagMax = 0.0;
-      if (H > 1e-6) {
-        sagMax = w * l * l / (8.0 * H);
-        if (sagMax > 0.15 * chord) sagMax = 0.15 * chord;
-      } else {
-        sagMax = 0.10 * chord;   // slack: moderate droop (avoid sharp joint bends)
-      }
+      // Sag from the horizontal tension, floored so it stays bounded and smooth
+      // as the cable goes slack (no divergence, no taut/slack switch).
+      const double H_eff = std::max(H, 10.0);
+      double sagMax = w * l * l / (8.0 * H_eff);
+      if (sagMax > 0.3 * chord) sagMax = 0.3 * chord;
 
       // Sag direction = gravity projected perpendicular to the chord, so the
       // cable still dips toward the ground when the chord is steep.
@@ -384,9 +368,21 @@ namespace wirehawk {
 
       auto sagAt = [&](double t) { return 4.0 * sagMax * t * (1.0 - t); };
 
+      // Active segments cover the trimmed span at ~2 m each. The SDF cylinders
+      // are a FIXED 2 m (no runtime geometry resize — the renderer did not
+      // reflect it). Unused segments are parked out of view.
+      const int n_draw = std::min((int)n,
+          std::max(1, (int)std::ceil(span.Length() / 2.0)));
+
       for (size_t j = 0; j < n; ++j) {
-        const double t0 = (double)j / (double)n;
-        const double t1 = (double)(j + 1) / (double)n;
+        if ((int)j >= n_draw) {
+          gz::sim::Model seg_model(cable_segments_[_i][j]);
+          seg_model.SetWorldPoseCmd(_ecm,
+              gz::math::Pose3d(0.0, 0.0, 500.0, 0.0, 0.0, 0.0));
+          continue;
+        }
+        const double t0 = (double)j / (double)n_draw;
+        const double t1 = (double)(j + 1) / (double)n_draw;
         gz::math::Vector3d p0 = p_start + span * t0 + sagDir * sagAt(t0);
         gz::math::Vector3d p1 = p_start + span * t1 + sagDir * sagAt(t1);
         gz::math::Vector3d seg = p1 - p0;
@@ -404,22 +400,6 @@ namespace wirehawk {
 
         gz::sim::Model seg_model(cable_segments_[_i][j]);
         seg_model.SetWorldPoseCmd(_ecm, gz::math::Pose3d(mid, rot));
-
-        // Resize the unit cylinder to the segment length plus a small overlap so
-        // consecutive cylinders fill the joint (no wedge gap at the bend).
-        gz::sim::Entity visual = cable_visuals_[_i][j];
-        if (visual != gz::sim::kNullEntity) {
-          auto *geomComp = _ecm.Component<gz::sim::components::Geometry>(visual);
-          if (geomComp) {
-            sdf::Geometry geom = geomComp->Data();
-            if (const sdf::Cylinder *cyl = geom.CylinderShape()) {
-              sdf::Cylinder c = *cyl;
-              c.SetLength(segLen + 0.003);
-              geom.SetCylinderShape(c);
-              _ecm.SetComponentData<gz::sim::components::Geometry>(visual, geom);
-            }
-          }
-        }
       }
     }
 
