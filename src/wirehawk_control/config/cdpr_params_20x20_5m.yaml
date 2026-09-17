@@ -13,7 +13,7 @@ cdpr_node:
     # Elastic-FK feedback (calibration copies matching the world SDF cable/payload params)
     cable_axial_stiffness: 98100.0    # EA [N] — must match <axial_stiffness> in the world SDF
     payload_mass: 3.0                 # [kg] — must match the payload mass in the world SDF
-    fk_gain: 0.1                      # [1/s] integral feedback gain (tunable)
+    fk_gain: 0.5                      # [1/s] integral feedback gain (tunable)
 
 trajectory_planner:
   ros__parameters:

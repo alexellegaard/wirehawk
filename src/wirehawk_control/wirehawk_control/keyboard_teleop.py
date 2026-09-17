@@ -2,6 +2,7 @@ import sys
 import termios
 import tty
 import select
+import math
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -100,13 +101,15 @@ class KeyboardTeleop(Node):
 
                 elif key in SPEED_BINDINGS:
                     self.speed = SPEED_BINDINGS[key]
-                    # Rescale active velocities if currently moving
-                    norm = max(abs(self.vx), abs(self.vy), abs(self.vz))
+                    # Rescale active velocities if currently moving (use true magnitude).
+                    norm = math.hypot(self.vx, self.vy, self.vz)
                     if norm > 0.0:
                         self.vx = (self.vx / norm) * self.speed
                         self.vy = (self.vy / norm) * self.speed
                         self.vz = (self.vz / norm) * self.speed
-                    print(f"\rSpeed updated: {self.speed} m/s                         ", end="", flush=True)
+                        print(f"\rMove -> X:{self.vx:+.1f} | Y:{self.vy:+.1f} | Z:{self.vz:+.1f} m/s", end="", flush=True)
+                    else:
+                        print(f"\rSpeed set to {self.speed} m/s (applies on next move key)", end="", flush=True)
 
                 elif key == ' ':
                     self.vx = 0.0
@@ -115,11 +118,12 @@ class KeyboardTeleop(Node):
                     print(f"\rSTOPPED                                           ", end="", flush=True)
 
         finally:
-            # Send one last zero velocity stop message
-            stop_msg = Twist()
-            self.pub.publish(stop_msg)
-            # Restore terminal attributes so terminal isn't broken upon exit
+            # Restore the terminal FIRST — a failed publish must not strand it in cbreak.
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.orig_term_settings)
+            try:
+                self.pub.publish(Twist())  # one last zero-velocity stop
+            except Exception:
+                pass
             print("\nExited teleop.")
 
 
