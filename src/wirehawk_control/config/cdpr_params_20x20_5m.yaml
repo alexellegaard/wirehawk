@@ -10,6 +10,10 @@ cdpr_node:
     max_linear_accel: 0.5
     rate_hz: 50.0
     cmd_timeout: 0.2
+    # Elastic-FK feedback (calibration copies matching the world SDF cable/payload params)
+    cable_axial_stiffness: 98100.0    # EA [N] — must match <axial_stiffness> in the world SDF
+    payload_mass: 3.0                 # [kg] — must match the payload mass in the world SDF
+    fk_gain: 0.1                      # [1/s] integral feedback gain (tunable)
 
 trajectory_planner:
   ros__parameters:
