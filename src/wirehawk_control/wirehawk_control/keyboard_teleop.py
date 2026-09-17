@@ -18,10 +18,9 @@ Movement:
         e          (+Z Up)
         q          (-Z Down)
 
-Speed Adjustment:
-   1 : 0.2 m/s (Slow / Fine precision)
-   2 : 0.5 m/s (Medium)
-   3 : 1.0 m/s (Fast)
+Speed (m/s):
+   1:0.2   2:0.5   3:1.0   4:1.5   5:2.0
+   6:2.5   7:3.0   8:4.0   9:5.0
 
 SPACEBAR : Stop immediately
 CTRL+C   : Quit
@@ -39,9 +38,8 @@ MOVE_BINDINGS = {
 }
 
 SPEED_BINDINGS = {
-    '1': 0.2,
-    '2': 0.5,
-    '3': 1.0,
+    '1': 0.2, '2': 0.5, '3': 1.0, '4': 1.5, '5': 2.0,
+    '6': 2.5, '7': 3.0, '8': 4.0, '9': 5.0,
 }
 
 
@@ -66,7 +64,12 @@ class KeyboardTeleop(Node):
         tty.setcbreak(sys.stdin.fileno())
 
         print(HELP_MSG)
-        print(f"Current Speed: {self.speed} m/s")
+        self._print_status('idle')
+
+    def _print_status(self, note=''):
+        """Single status line: current speed + commanded velocity, updated in place."""
+        vel = f"Move -> X:{self.vx:+.1f} | Y:{self.vy:+.1f} | Z:{self.vz:+.1f} m/s"
+        print(f"\r[Speed {self.speed:g} m/s] {vel}  {note}", end='', flush=True)
 
     def timer_publish(self):
         msg = Twist()
@@ -97,25 +100,25 @@ class KeyboardTeleop(Node):
                     self.vx = dx * self.speed
                     self.vy = dy * self.speed
                     self.vz = dz * self.speed
-                    print(f"\rMove -> X:{self.vx:+.1f} | Y:{self.vy:+.1f} | Z:{self.vz:+.1f} m/s", end="", flush=True)
+                    self._print_status()
 
                 elif key in SPEED_BINDINGS:
                     self.speed = SPEED_BINDINGS[key]
-                    # Rescale active velocities if currently moving (use true magnitude).
+                    # Rescale active velocities if currently moving (use true magnitude)
                     norm = math.hypot(self.vx, self.vy, self.vz)
                     if norm > 0.0:
                         self.vx = (self.vx / norm) * self.speed
                         self.vy = (self.vy / norm) * self.speed
                         self.vz = (self.vz / norm) * self.speed
-                        print(f"\rMove -> X:{self.vx:+.1f} | Y:{self.vy:+.1f} | Z:{self.vz:+.1f} m/s", end="", flush=True)
+                        self._print_status()
                     else:
-                        print(f"\rSpeed set to {self.speed} m/s (applies on next move key)", end="", flush=True)
+                        self._print_status('(applies on next move key)')
 
                 elif key == ' ':
                     self.vx = 0.0
                     self.vy = 0.0
                     self.vz = 0.0
-                    print(f"\rSTOPPED                                           ", end="", flush=True)
+                    self._print_status('STOPPED')
 
         finally:
             # Restore the terminal FIRST — a failed publish must not strand it in cbreak.
@@ -124,7 +127,7 @@ class KeyboardTeleop(Node):
                 self.pub.publish(Twist())  # one last zero-velocity stop
             except Exception:
                 pass
-            print("\nExited teleop.")
+            print('\nExited teleop.')
 
 
 def main(args=None):
@@ -133,7 +136,7 @@ def main(args=None):
     try:
         teleop_node.run()
     except Exception as e:
-        print(f"\nError: {e}")
+        print(f'\nError: {e}')
     finally:
         teleop_node.destroy_node()
         rclpy.shutdown()
