@@ -1,0 +1,9 @@
+ethercat_bridge:
+  ros__parameters:
+    interface: "eth0"            # EtherCAT NIC on the master machine
+    cycle_ns: 1000000            # 1 ms EtherCAT cycle (integer multiple of 250 us)
+    counts_per_rev: 131072       # A6-1000EC 17-bit encoder
+    num_motors: 1                # bench: 1; 2D CDPR: 2; full: 4
+    rt_cpu: 3                    # isolated core the RT thread is pinned to
+    max_speed: 131072.0          # counts/s   (trapezoid speed limit)
+    max_accel: 1310720.0         # counts/s^2 (trapezoid accel limit)
