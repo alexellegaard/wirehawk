@@ -226,13 +226,13 @@ int main(int argc, char *argv[])
         else
             printf("FAILED to set C13.05 (0x2013:06)\n");
 
-        /* C13.11 (0x2013:12) = IRQ-loss threshold: raise 5 -> 10 so the non-RT
-         * master's frame jitter doesn't trip ErC1.1 "Synchronization loss". */
+        /* C13.11 (0x2013:18) = "Irq lost window" (IRQ-loss threshold): raise
+         * 5 -> 10 so the shutdown SYNC0 gap doesn't trip ErC1.1. */
         uint16_t irq_thr = 10;
-        if (ecx_SDOwrite(&ctx, 1, 0x2013, 12, FALSE, sizeof(irq_thr), &irq_thr, EC_TIMEOUTSAFE) > 0)
+        if (ecx_SDOwrite(&ctx, 1, 0x2013, 18, FALSE, sizeof(irq_thr), &irq_thr, EC_TIMEOUTSAFE) > 0)
             printf("C13.11 = 10 (IRQ-loss threshold)\n");
         else
-            printf("FAILED to set C13.11 (0x2013:12)\n");
+            printf("FAILED to set C13.11 (0x2013:18)\n");
 
         uint16_t v = 0; int sz = sizeof(v);
         if (ecx_SDOread(&ctx, 1, 0x2013, 6, FALSE, &sz, &v, EC_TIMEOUTSAFE) > 0)
@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
         printf("AL status code (0x134) = 0x%04X\n", etohs(alsc));
 
         uint16_t irq = 0; int sz = sizeof(irq);
-        if (ecx_SDOread(&ctx, 1, 0x2013, 13, FALSE, &sz, &irq, EC_TIMEOUTSAFE) > 0)
+        if (ecx_SDOread(&ctx, 1, 0x2013, 19, FALSE, &sz, &irq, EC_TIMEOUTSAFE) > 0)
             printf("C13.12 IRQ-loss count = %u\n", irq);
     }
 
