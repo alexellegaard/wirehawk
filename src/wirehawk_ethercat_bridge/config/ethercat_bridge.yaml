@@ -7,3 +7,5 @@ ethercat_bridge:
     rt_cpu: 3                    # isolated core the RT thread is pinned to
     max_speed: 131072.0          # counts/s   (trapezoid speed limit)
     max_accel: 1310720.0         # counts/s^2 (trapezoid accel limit)
+    counts_offset: 0             # added to commanded target. Set to -(spool counts at the
+                                 # pose where you zero the drive) so the motor tracks deltas from zero.

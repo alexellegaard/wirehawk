@@ -28,6 +28,7 @@ int main(int argc, char** argv)
     node->declare_parameter("rt_cpu",        cfg.rt_cpu);
     node->declare_parameter("max_speed",     cfg.max_speed);
     node->declare_parameter("max_accel",     cfg.max_accel);
+    node->declare_parameter("counts_offset", cfg.counts_offset);
 
     cfg.interface      = node->get_parameter("interface").as_string();
     cfg.cycle_ns       = node->get_parameter("cycle_ns").as_int();
@@ -36,6 +37,7 @@ int main(int argc, char** argv)
     cfg.rt_cpu         = node->get_parameter("rt_cpu").as_int();
     cfg.max_speed      = node->get_parameter("max_speed").as_double();
     cfg.max_accel      = node->get_parameter("max_accel").as_double();
+    cfg.counts_offset  = node->get_parameter("counts_offset").as_int();
 
     BridgeData data;
 
@@ -51,7 +53,8 @@ int main(int argc, char** argv)
             std::lock_guard<std::mutex> lk(data.mtx);
             int n = std::min<int>(msg->position.size(), cfg.num_motors);
             for (int i = 0; i < n; i++)
-                data.target_position[i] = msg->position[i];
+                data.target_position[i] =
+                    (int32_t)((int64_t)msg->position[i] + cfg.counts_offset);
             data.target_valid = true;
         });
 
