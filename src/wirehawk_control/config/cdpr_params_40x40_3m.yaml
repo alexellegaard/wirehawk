@@ -1,0 +1,24 @@
+# Wirehawk control params — world: 40x40 m footprint, 3 m masts (anchors z=3.0)
+# Anchors MUST match the pillar layout in wirehawk_world_40x40_3m.sdf
+cdpr_node:
+  ros__parameters:
+    anchors: [20.0, 20.0, 3.0, 20.0, -20.0, 3.0, -20.0, -20.0, 3.0, -20.0, 20.0, 3.0]
+    start_position: [0.0, 0.0, 1.5]
+    workspace_min: [-14.0, -14.0, 0.3]
+    workspace_max: [14.0, 14.0, 2.7]
+    max_linear_speed: 5.0
+    max_linear_accel: 3.0
+    rate_hz: 50.0
+    cmd_timeout: 0.2
+    # Elastic-FK feedback (calibration copies matching the world SDF cable/payload params)
+    cable_axial_stiffness: 98100.0    # EA [N] — must match <axial_stiffness> in the world SDF
+    payload_mass: 3.0                 # [kg] — must match the payload mass in the world SDF
+    fk_gain: 0.5                      # [1/s] integral feedback gain (tunable)
+
+trajectory_planner:
+  ros__parameters:
+    max_linear_speed: 5.0
+    max_linear_accel: 3.0
+    goal_tolerance: 0.02
+    decel_distance: 0.3
+    rate_hz: 50.0

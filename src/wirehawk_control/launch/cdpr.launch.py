@@ -50,7 +50,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value='20x20_3m',
-                              description='World variant: 20x20_3m, 20x20_5m, 70x70_3m, 70x70_5m'),
+                              description='World variant: 20x20_3m, 20x20_5m, 40x40_3m, 70x70_3m, 70x70_5m'),
         sim_launch,
         cdpr_node,
         sim_bridge
