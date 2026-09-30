@@ -1,6 +1,5 @@
 # ROS 2 build output
 build/
-build/
 install/
 log/
 # Python cache
@@ -15,3 +14,12 @@ __pycache__/
 *~
 # OS artifacts
 .DS_Store
+# Compiled SOEM bench binaries (built by src/wirehawk_ethercat/Makefile)
+src/wirehawk_ethercat/a6_csp_rt
+src/wirehawk_ethercat/a6_pp
+src/wirehawk_ethercat/a6_pp_rt
+src/wirehawk_ethercat/a6_reset
+# Stray duplicate source
+src/wirehawk_ethercat/a6_csp copy.c
+# Vendor reference (large binary)
+A6-EC_series_servo_drive_manual.pdf
