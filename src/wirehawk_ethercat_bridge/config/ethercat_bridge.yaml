@@ -5,7 +5,7 @@ ethercat_bridge:
     counts_per_rev: 131072       # A6-1000EC 17-bit encoder
     num_motors: 1                # bench: 1; 2D CDPR: 2; full: 4
     rt_cpu: 3                    # isolated core the RT thread is pinned to
-    max_speed: 131072.0          # counts/s   (trapezoid speed limit)
-    max_accel: 1310720.0         # counts/s^2 (trapezoid accel limit)
-    counts_offset: 0             # added to commanded target. Set to -(spool counts at the
-                                 # pose where you zero the drive) so the motor tracks deltas from zero.
+    max_speed: 2100000.0         # counts/s  (~16 rev/s ~ 1 m/s cable; matches controller max_linear_speed)
+    max_accel: 10000000.0        # counts/s^2 (snappy tracking; raise if it still lags on fast moves)
+    counts_offset: -62810017     # zeroes the drive at the 20x20_3m start pose (spool counts at [0,0,1.5]).
+                                 # World-specific: recompute for a different start pose. 0 = no offset.
