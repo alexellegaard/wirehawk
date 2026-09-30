@@ -195,6 +195,8 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
         ecx_SDOwrite(&g_ctx, i, 0x2013, 6,  FALSE, sizeof(sync_mode), &sync_mode, EC_TIMEOUTSAFE);
         uint16_t irq_thr = 10;    // relax the IRQ-loss threshold 5 -> 10
         ecx_SDOwrite(&g_ctx, i, 0x2013, 18, FALSE, sizeof(irq_thr), &irq_thr, EC_TIMEOUTSAFE);
+        uint16_t sync_lost = 20;  // relax "Sync lost window" 8 -> 20 (max), the untried sibling of IRQ-loss
+        ecx_SDOwrite(&g_ctx, i, 0x2013, 3,  FALSE, sizeof(sync_lost), &sync_lost, EC_TIMEOUTSAFE);
     }
     ecx_statecheck(&g_ctx, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
     printf("RT: SAFE_OP reached\n");
@@ -228,6 +230,7 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
 
     // ---- the RT loop (1 kHz, absolute deadline) ----
     int64_t toff = 0;
+    int64_t total_cycles = 0, deadline_misses = 0, max_late_ns = 0;  // jitter monitor
     struct timespec next;
     clock_gettime(CLOCK_MONOTONIC, &next);
     next.tv_nsec = ((next.tv_nsec / 1000000) + 1) * 1000000;
@@ -238,6 +241,25 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
         next.tv_nsec += g_cfg.cycle_ns + toff;
         if (next.tv_nsec >= 1000000000) { next.tv_nsec -= 1000000000; next.tv_sec++; }
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+
+        // jitter monitor: how late was this wakeup vs the intended deadline?
+        {
+            struct timespec woken;
+            clock_gettime(CLOCK_MONOTONIC, &woken);
+            int64_t woken_ns = (int64_t)woken.tv_sec * 1000000000LL + woken.tv_nsec;
+            int64_t next_ns  = (int64_t)next.tv_sec  * 1000000000LL + next.tv_nsec;
+            int64_t late_ns  = woken_ns - next_ns;
+            if (late_ns > 0) {
+                deadline_misses++;
+                if (late_ns > max_late_ns) max_late_ns = late_ns;
+            }
+        }
+        total_cycles++;
+        if (total_cycles % 10000 == 0)   // every ~10 s
+            printf("RT jitter: %lld late / %lld cycles (%.4f%%), max late %lld ns\n",
+                   (long long)deadline_misses, (long long)total_cycles,
+                   100.0 * (double)deadline_misses / (double)total_cycles,
+                   (long long)max_late_ns);
 
         wkc = ecx_receive_processdata(&g_ctx, EC_TIMEOUTRET);
         if (wkc > 0)
