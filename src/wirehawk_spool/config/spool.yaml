@@ -1,0 +1,14 @@
+# Winch/spool geometry — single source of truth for the encoder-counts <-> cable-length
+# conversion. Shared by wirehawk_control (command + FK feedback) and wirehawk_gazebo_bridge
+# (sim physics), so the two sides cannot disagree on the mapping.
+spool:
+  total_m: 65.0            # cable inventory per winch [m]
+  core_d_m: 0.020          # drum core diameter [m]  (PENDING DECISION: 0.020 core vs V2's 0.018 groove-floor / 0.020 cable-centre)
+  rope_d_m: 0.002          # cable diameter [m]
+  width_m: 0.150           # winding width [m]
+  pitch_m: 0.0021          # axial pitch per turn [m]
+  flange_d_m: 0.064        # flange diameter [m]
+  turns_per_layer: 70      # turns per layer (ideal square packing)
+  max_layers: 9            # maximum winding layers
+  counts_per_rev: 131072   # encoder counts per motor revolution (17-bit)
+  gear_ratio: 1.0          # motor revolutions per drum revolution

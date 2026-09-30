@@ -30,6 +30,16 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Sim bridge: stands in for the EtherCAT bridge. Consumes cdpr_node's
+    # cmd/motors (counts), drives the Gazebo cable lengths, and returns
+    # state/motors (counts) so the controller loop closes on the sim backend.
+    sim_bridge = Node(
+        package='wirehawk_gazebo_bridge',
+        executable='sim_bridge',
+        name='sim_bridge',
+        output='screen'
+    )
+
     # NOTE: trajectory_planner and keyboard_teleop are ALTERNATIVE /cmd_vel
     # sources (goal-based vs manual) and must NOT run at the same time — the
     # planner holds its initial pose and would cancel teleop input. Launch them
@@ -42,5 +52,6 @@ def generate_launch_description():
         DeclareLaunchArgument('world', default_value='20x20_3m',
                               description='World variant: 20x20_3m, 20x20_5m, 70x70_3m, 70x70_5m'),
         sim_launch,
-        cdpr_node
+        cdpr_node,
+        sim_bridge
     ])

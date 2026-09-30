@@ -1,147 +1,120 @@
+import os
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, PoseStamped
-from std_msgs.msg import Float64
-import numpy as np
+from wirehawk_msgs.msg import MotorCommand, MotorState
+from ament_index_python.packages import get_package_share_directory
 
-from wirehawk_control.kinematics import CDPRKinematics
+from wirehawk_control.controller import CDPRController
+from wirehawk_spool.spool_model import load_spec
 
 
 class CDPRNode(Node):
+    """The backend-agnostic CDPR controller node.
+
+    Task input:     /cmd_vel (Twist)            — from teleop or trajectory planner
+    Backend output:  cmd/motors (MotorCommand)  — target encoder counts
+    Backend input:   state/motors (MotorState)  — measured encoder counts
+    Diagnostic:      /cdpr/current_pose         — FK position estimate (from counts)
+
+    It never puts cable lengths on the wire and never reads ground-truth pose.
+    Whether `state/motors` comes from the real EtherCAT bridge or the Gazebo
+    bridge is decided by which backend is running — this node is agnostic.
+    """
     def __init__(self):
         super().__init__('cdpr_node')
 
-        # Parameters (single source of truth in yaml, typed, no default)
+        # --- world params (single source of truth: cdpr_params_<world>.yaml) ---
         self.declare_parameter('anchors', rclpy.Parameter.Type.DOUBLE_ARRAY)
         self.declare_parameter('start_position', rclpy.Parameter.Type.DOUBLE_ARRAY)
         self.declare_parameter('workspace_min', rclpy.Parameter.Type.DOUBLE_ARRAY)
         self.declare_parameter('workspace_max', rclpy.Parameter.Type.DOUBLE_ARRAY)
         self.declare_parameter('max_linear_speed', rclpy.Parameter.Type.DOUBLE)
-        self.declare_parameter('max_linear_accel', rclpy.Parameter.Type.DOUBLE)  # Slew-rate limit (m/s^2)
+        self.declare_parameter('max_linear_accel', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('rate_hz', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('cmd_timeout', rclpy.Parameter.Type.DOUBLE)
-        # Elastic-FK feedback (calibration copies matching the world SDF cable/payload params)
-        self.declare_parameter('cable_axial_stiffness', rclpy.Parameter.Type.DOUBLE)  # EA [N]
-        self.declare_parameter('payload_mass', rclpy.Parameter.Type.DOUBLE)           # [kg]
-        self.declare_parameter('fk_gain', rclpy.Parameter.Type.DOUBLE)                # [1/s]
+        self.declare_parameter('cable_axial_stiffness', rclpy.Parameter.Type.DOUBLE)
+        self.declare_parameter('payload_mass', rclpy.Parameter.Type.DOUBLE)
+        self.declare_parameter('fk_gain', rclpy.Parameter.Type.DOUBLE)
 
         raw_anchors = self.get_parameter('anchors').value
         if not raw_anchors or len(raw_anchors) % 3 != 0:
             raise RuntimeError("Parameter 'anchors' must be a flattened list of (x, y, z) points.")
 
-        anchors = np.array(raw_anchors, dtype=float).reshape(-1, 3)
-        start_pos = np.array(self.get_parameter('start_position').value, dtype=float)
-        self.ws_min = np.array(self.get_parameter('workspace_min').value, dtype=float)
-        self.ws_max = np.array(self.get_parameter('workspace_max').value, dtype=float)
-        self.max_speed = float(self.get_parameter('max_linear_speed').value)
-        self.max_accel = float(self.get_parameter('max_linear_accel').value)
-        self.rate_hz = float(self.get_parameter('rate_hz').value)
+        rate_hz = float(self.get_parameter('rate_hz').value)
+        self.dt = 1.0 / rate_hz
         self.cmd_timeout = float(self.get_parameter('cmd_timeout').value)
-        self.EA = float(self.get_parameter('cable_axial_stiffness').value)
-        self.mass = float(self.get_parameter('payload_mass').value)
-        self.fk_gain = float(self.get_parameter('fk_gain').value)
-        self.dt = 1.0 / self.rate_hz
 
-        # Kinematics core
-        self.kinematics = CDPRKinematics(anchors=anchors)
+        # --- spool geometry (single source of truth: wirehawk_spool config) ---
+        spool_yaml = os.path.join(
+            get_package_share_directory('wirehawk_spool'), 'config', 'spool.yaml')
+        spec = load_spec(spool_yaml)
 
-        # State
-        self.target_pos = np.clip(start_pos, self.ws_min, self.ws_max)  # integrated velocity target
-        self.target_vel = np.zeros(3, dtype=float)
-        self.filtered_vel = np.zeros(3, dtype=float)
-        self.last_cmd_time = self.get_clock().now()
-
-        # Cable-length command state (feedforward + integral sag compensation)
-        self.L0 = self.kinematics.compute_commanded_lengths(self.target_pos).copy()
-        self.L0_integral = np.zeros(self.kinematics.num_cables, dtype=float)
-        self.P_est = self.target_pos.copy()  # FK estimate of the actual position
-
-        # Direct publishers to Gazebo
-        self.cable_pubs = [
-            self.create_publisher(Float64, f'/cdpr/l{i}', 10)
-            for i in range(self.kinematics.num_cables)
-        ]
-
-        # Pose publisher (now the FK estimate, not dead reckoning)
-        self.pose_pub = self.create_publisher(PoseStamped, '/cdpr/current_pose', 10)
-
-        # Velocity subscriber
-        self.cmd_sub = self.create_subscription(
-            Twist,
-            '/cmd_vel',
-            self.cmd_vel_callback,
-            10
+        self.controller = CDPRController(
+            anchors=np.array(raw_anchors, dtype=float).reshape(-1, 3),
+            start_pos=np.array(self.get_parameter('start_position').value, dtype=float),
+            ws_min=np.array(self.get_parameter('workspace_min').value, dtype=float),
+            ws_max=np.array(self.get_parameter('workspace_max').value, dtype=float),
+            max_speed=float(self.get_parameter('max_linear_speed').value),
+            max_accel=float(self.get_parameter('max_linear_accel').value),
+            EA=float(self.get_parameter('cable_axial_stiffness').value),
+            mass=float(self.get_parameter('payload_mass').value),
+            fk_gain=float(self.get_parameter('fk_gain').value),
+            spec=spec,
         )
+
+        self.last_cmd_time = self.get_clock().now()
+        self.measured_counts = None       # None until the first state/motors arrives
+        self.last_state_time = None
+
+        # --- backend interface (relative names so they can be remapped) ---
+        self.cmd_pub = self.create_publisher(MotorCommand, 'cmd/motors', 10)
+        self.state_sub = self.create_subscription(
+            MotorState, 'state/motors', self.state_cb, 10)
+
+        # --- task input + diagnostic (legacy names, kept for teleop/planner) ---
+        self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_cb, 10)
+        self.pose_pub = self.create_publisher(PoseStamped, '/cdpr/current_pose', 10)
 
         self.timer = self.create_timer(self.dt, self.timer_callback)
         self.get_logger().info(
-            f"CDPR Node (elastic-FK feedback): WS {self.ws_min.tolist()} to {self.ws_max.tolist()}"
-            f" | EA={self.EA} N, mass={self.mass} kg, gain={self.fk_gain} 1/s"
-        )
+            f"CDPR Node (counts interface): WS {self.controller.ws_min.tolist()} to "
+            f"{self.controller.ws_max.tolist()} | EA={self.controller.EA} N, "
+            f"mass={self.controller.mass} kg, gain={self.controller.fk_gain} 1/s")
 
-    def cmd_vel_callback(self, msg: Twist):
-        vx = np.clip(msg.linear.x, -self.max_speed, self.max_speed)
-        vy = np.clip(msg.linear.y, -self.max_speed, self.max_speed)
-        vz = np.clip(msg.linear.z, -self.max_speed, self.max_speed)
-        self.target_vel = np.array([vx, vy, vz], dtype=float)
+    def cmd_vel_cb(self, msg: Twist):
+        self.controller.set_target_velocity([
+            msg.linear.x, msg.linear.y, msg.linear.z])
         self.last_cmd_time = self.get_clock().now()
 
+    def state_cb(self, msg: MotorState):
+        # Encoder feedback is the ONLY measurement this controller trusts.
+        self.measured_counts = np.asarray(msg.position, dtype=np.int64)
+        self.last_state_time = self.get_clock().now()
+
     def timer_callback(self):
-        # Watchdog: zero velocity if input stops
-        time_since_cmd = (self.get_clock().now() - self.last_cmd_time).nanoseconds / 1e9
-        if time_since_cmd > self.cmd_timeout:
-            self.target_vel = np.zeros(3, dtype=float)
+        now = self.get_clock().now()
 
-        # 1. Acceleration rate limiter (slew rate filter)
-        vel_diff = self.target_vel - self.filtered_vel
-        diff_mag = np.linalg.norm(vel_diff)
-        max_dv = self.max_accel * self.dt
+        # Watchdog: zero velocity if the task input stops (stale /cmd_vel).
+        if (now - self.last_cmd_time).nanoseconds / 1e9 > self.cmd_timeout:
+            self.controller.stop()
 
-        if diff_mag > max_dv:
-            self.filtered_vel += (vel_diff / diff_mag) * max_dv
-        else:
-            self.filtered_vel = np.copy(self.target_vel)
+        counts = self.controller.step(self.dt, self.measured_counts)
 
-        # 2. Integrate velocity -> target position, clamp within workspace bounds
-        self.target_pos += self.filtered_vel * self.dt
-        self.target_pos = np.clip(self.target_pos, self.ws_min, self.ws_max)
+        cmd = MotorCommand()
+        cmd.header.stamp = now.to_msg()
+        cmd.ctrl_word = 0                       # reserved; lifecycle not wired yet
+        cmd.position = [int(c) for c in counts]
+        self.cmd_pub.publish(cmd)
 
-        # 3. Estimate the actual payload position from the commanded cable lengths
-        #    (elastic FK — self-contained, no tension measurement).
-        self.P_est, converged = self.kinematics.elastic_forward_kinematics(
-            self.L0, self.EA, self.mass, self.P_est
-        )
-        self.P_est = np.clip(self.P_est, self.ws_min, self.ws_max)
-
-        # 4. Position error: how far the payload really is from the target.
-        e = self.target_pos - self.P_est
-
-        # 5. Integral feedback on length: keep winding in/out until the payload is
-        #    actually at the target (pretension emerges automatically from the loop).
-        #    dL_i/dt = -gain * (u_i . e),  u_i = unit vector from payload to anchor i.
-        u = self.kinematics.anchor_unit_vectors(self.P_est)
-        proj = u @ e  # (N,) projection of the position error onto each cable direction
-        self.L0_integral -= self.fk_gain * proj * self.dt
-        self.L0_integral = np.clip(self.L0_integral, -5.0, 5.0)  # anti-windup
-
-        # 6. Commanded lengths = geometric feedforward + accumulated sag compensation.
-        L0_ff = self.kinematics.compute_commanded_lengths(self.target_pos)
-        self.L0 = np.clip(L0_ff + self.L0_integral, 0.1, 150.0)
-
-        # 7. Publish pose estimate (the FK estimate, not the dead-reckoned target).
-        pose_msg = PoseStamped()
-        pose_msg.header.stamp = self.get_clock().now().to_msg()
-        pose_msg.header.frame_id = 'world'
-        pose_msg.pose.position.x = float(self.P_est[0])
-        pose_msg.pose.position.y = float(self.P_est[1])
-        pose_msg.pose.position.z = float(self.P_est[2])
-        self.pose_pub.publish(pose_msg)
-
-        # 8. Publish commanded lengths to the winches.
-        for i, pub in enumerate(self.cable_pubs):
-            msg = Float64()
-            msg.data = float(self.L0[i])
-            pub.publish(msg)
+        pose = PoseStamped()
+        pose.header.stamp = now.to_msg()
+        pose.header.frame_id = 'world'
+        pose.pose.position.x = float(self.controller.P_est[0])
+        pose.pose.position.y = float(self.controller.P_est[1])
+        pose.pose.position.z = float(self.controller.P_est[2])
+        self.pose_pub.publish(pose)
 
 
 def main(args=None):
