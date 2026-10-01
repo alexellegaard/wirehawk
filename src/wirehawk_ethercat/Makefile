@@ -26,6 +26,9 @@ a6_gains: a6_gains.c $(SOEM_LIB)
 a6_set_profile: a6_set_profile.c $(SOEM_LIB)
 	gcc $(CFLAGS) -o $@ $< $(LDFLAGS)
 
+a6_step_test: a6_step_test.c $(SOEM_LIB)
+	gcc $(CFLAGS) -o $@ $< $(LDFLAGS)
+
 # Convenience: clone + build SOEM if it isn't there yet.
 $(SOEM_LIB):
 	@echo "SOEM library not found. Building it..."
