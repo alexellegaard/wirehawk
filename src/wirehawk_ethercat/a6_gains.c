@@ -7,7 +7,10 @@
  *   0x2000 (C00 basic/inertia/stiffness), 0x2001 (C01 gains),
  *   0x2002 + 0x2003 (advanced: MFC / observers / vibration suppression),
  *   and a set of CiA-402 behaviour objects (mode, positioning option,
- *   interpolation time, polarity, profile accel/decel, motor type).
+ *   interpolation time, polarity, profile accel/decel, motor type),
+ *   plus position-scaling / homing objects (0x6063 internal position,
+ *   0x607C home offset, 0x6091 gear ratio, 0x6065..0x6068 windows) to hunt
+ *   a per-drive zero-offset / following-window difference.
  * Any value that differs between the two drives is flagged " <<<< DIFF".
  *
  * Runs in Safe-OP (motors stay disabled). Safe with motors idle.
@@ -91,6 +94,19 @@ static void cia(uint16_t idx, uint8_t sub, const char* label)
     printf("  0x%04X:%02d  %-22s  A=%-10s B=%-10s%s\n", idx, sub, label, sa, sb, mark);
 }
 
+/* Signed 32-bit variant for DINT objects (home offset, position internal) */
+static void cia_s(uint16_t idx, uint8_t sub, const char* label)
+{
+    int32_t a = 0, b = 0;
+    int oka = rd32(1, idx, sub, (uint32_t*)&a);
+    int okb = rd32(2, idx, sub, (uint32_t*)&b);
+    char sa[16], sb[16];
+    snprintf(sa, sizeof(sa), oka ? "%d" : "FAIL", a);
+    snprintf(sb, sizeof(sb), okb ? "%d" : "FAIL", b);
+    const char* mark = (oka != okb) || (oka && okb && a != b) ? "  <<<< DIFF" : "";
+    printf("  0x%04X:%02d  %-22s  A=%-10s B=%-10s%s\n", idx, sub, label, sa, sb, mark);
+}
+
 int main(int argc, char** argv)
 {
     if (argc != 2) {
@@ -138,6 +154,18 @@ int main(int argc, char** argv)
     cia(0x6083, 0, "profile accel");
     cia(0x6084, 0, "profile decel");
     cia(0x6402, 0, "motor type");
+
+    printf("== position scaling / homing (offset candidates) ==\n");
+    cia_s(0x6063, 0, "pos actual internal*");   /* raw encoder, before gear ratio */
+    cia  (0x6064, 0, "pos actual (user)");      /* what the TxPDO reports */
+    cia_s(0x607C, 0, "home offset");            /* shifts zero after homing */
+    cia  (0x6091, 1, "gear ratio: motor rev");
+    cia  (0x6091, 2, "gear ratio: shaft rev");
+    cia  (0x6065, 0, "following err window");
+    cia  (0x6066, 0, "following err timeout");
+    cia  (0x6067, 0, "position window");
+    cia  (0x6068, 0, "position window time");
+    cia  (0x6085, 0, "quick stop decel");
 
     ecx_close(&ctx);
     return 0;
