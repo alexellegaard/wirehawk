@@ -81,7 +81,7 @@ int main(int argc, char** argv)
      * no DC, no OP — we only need SDO here. */
     {
         uint8_t io_map[4096] = {0};
-        ec_config_map_group(&ctx, io_map, 0);
+        ecx_config_map_group(&ctx, io_map, 0);
     }
     ecx_statecheck(&ctx, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
     printf("SAFE_OP reached\n");
