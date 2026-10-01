@@ -1,17 +1,15 @@
-/* a6_step_test.c — step-and-hold test for TWO daisy-chained A6 drives.
+/* a6_step_test.c — gentle ramp-and-hold test for TWO daisy-chained A6 drives.
  *
  * Usage: sudo ./a6_step_test <ifname>
  *
- * Sends the IDENTICAL command to both motors. Sequence:
- *   settle 1 s  ->  +1 rev -> dwell 2 s  ->  0 -> dwell 2 s  ->
- *   -1 rev -> dwell 2 s  ->  0 -> dwell 2 s   (then repeats until Ctrl-C).
+ * Sends the IDENTICAL command to both motors. Each segment ramps the target
+ * GENTLY (linear ramp over `move_ms`) to +/- 1 rev, then HOLDS for a dwell.
+ * The dwell is the point of the test: after the ramp stops, the following
+ * error (0x60F4) shows whether the drive overshoots and how long it settles.
+ * Prints a 200 ms trace + a per-segment summary (peak |ferr| and settle time)
+ * for M0 (slave 1) and M1 (slave 2).
  *
- * The dwell is the point of the test: after the step, the following error
- * (0x60F4) shows whether the drive overshoots and how long it takes to settle.
- * Each step prints a 200 ms trace plus a summary (peak |ferr| and settle time)
- * for M0 (slave 1) and M1 (slave 2), so any difference is immediately visible.
- *
- * FREE SHAFTS — no load. Steps are 1 rev.
+ * FREE SHAFTS — no load. Gentle ramp (1 rev over 800 ms), no harsh steps.
  */
 #define _GNU_SOURCE
 
@@ -90,18 +88,18 @@ static void ec_sync(int64 reftime, int64 cycletime, int64 *offsettime)
     *offsettime = (int64)((-delta * pgain) + (integral * igain));
 }
 
-/* ---- step sequence ---- */
-typedef struct { int32_t target; int dwell_ms; } Seg;
+/* ---- ramp-and-hold sequence ---- */
+typedef struct { int32_t target; int move_ms; int dwell_ms; } Seg;
 static const Seg SEGS[] = {
-    { 0,                1000 },
-    { +STEP_COUNTS,     2000 },
-    { 0,                2000 },
-    { -STEP_COUNTS,     2000 },
-    { 0,                2000 },
-    { +STEP_COUNTS,     2000 },
-    { 0,                2000 },
-    { -STEP_COUNTS,     2000 },
-    { 0,                2000 },
+    { 0,              0, 1000 },   /* settle at start */
+    { +STEP_COUNTS, 800, 2000 },   /* gentle ramp up, then dwell */
+    { 0,            800, 2000 },
+    { -STEP_COUNTS, 800, 2000 },
+    { 0,            800, 2000 },
+    { +STEP_COUNTS, 800, 2000 },
+    { 0,            800, 2000 },
+    { -STEP_COUNTS, 800, 2000 },
+    { 0,            800, 2000 },
 };
 #define N_SEGS ((int)(sizeof(SEGS)/sizeof(SEGS[0])))
 
@@ -155,10 +153,9 @@ int main(int argc, char *argv[])
     printf("OPERATIONAL reached\n");
     exchange();
 
-    int32_t start_pos[MAX_MOTORS];
     int     enabled[MAX_MOTORS] = {0, 0};
     int     fault_reset[MAX_MOTORS] = {0, 0};
-    for (int m = 0; m < n; m++) start_pos[m] = tx[m]->position_actual;
+    int32_t cmd_pos[MAX_MOTORS];   /* commanded position at segment start */
 
     int64 toff = 0;
     struct timespec next;
@@ -169,7 +166,7 @@ int main(int argc, char *argv[])
     int64_t max_ferr[MAX_MOTORS];
     int     last_big[MAX_MOTORS];
 
-    printf("Beginning step-and-hold test (1 rev steps, 2 s dwells)...\n");
+    printf("Beginning ramp-and-hold test (1 rev over 800 ms, 2 s dwells)...\n");
     while (running && seg < N_SEGS) {
         next.tv_nsec += CYCLE_NS + toff;
         if (next.tv_nsec >= 1000000000) { next.tv_nsec -= 1000000000; next.tv_sec++; }
@@ -178,12 +175,14 @@ int main(int argc, char *argv[])
         wkc = ecx_receive_processdata(&ctx, EC_TIMEOUTRET);
         if (wkc > 0) ec_sync(ctx.DCtime, CYCLE_NS, &toff);
 
-        /* first time entering a segment: set target + reset measurement */
         if (seg_cycle == 0) {
             for (int m = 0; m < n; m++) { max_ferr[m] = 0; last_big[m] = -1; }
-            printf("\n== SEG %d: target %+d counts, dwell %d ms ==\n",
-                   seg, SEGS[seg].target, SEGS[seg].dwell_ms);
+            printf("\n== SEG %d: move %+d counts over %d ms, dwell %d ms ==\n",
+                   seg, SEGS[seg].target, SEGS[seg].move_ms, SEGS[seg].dwell_ms);
         }
+
+        int mv = SEGS[seg].move_ms;
+        int dwell = (seg_cycle >= mv);
 
         for (int m = 0; m < n; m++) {
             uint16_t sw = tx[m]->status_word;
@@ -199,35 +198,41 @@ int main(int argc, char *argv[])
                 if ((sw & 0x004F) == 0x0040)      rx[m]->control_word = 0x0006;
                 else if (state == 0x0021)         rx[m]->control_word = 0x0007;
                 else if (state == 0x0023)         rx[m]->control_word = 0x000F;
-                else if (state == 0x0027) {       enabled[m] = 1; start_pos[m] = tx[m]->position_actual; }
+                else if (state == 0x0027) {       enabled[m] = 1; cmd_pos[m] = tx[m]->position_actual; }
                 continue;
             }
-            /* enabled -> command the segment target (identical for both motors) */
-            rx[m]->target_position = start_pos[m] + SEGS[seg].target;
+            if (!dwell) {
+                double frac = (mv > 0) ? (double)seg_cycle / (double)mv : 1.0;
+                rx[m]->target_position = cmd_pos[m] + (int32_t)((double)SEGS[seg].target * frac);
+            } else {
+                rx[m]->target_position = cmd_pos[m] + SEGS[seg].target;
+            }
             rx[m]->control_word = 0x000F;
         }
 
-        /* measure following error */
-        for (int m = 0; m < n; m++) {
-            int32_t f = tx[m]->following_error;
-            int64_t af = (f < 0) ? -(int64_t)f : (int64_t)f;
-            if (af > max_ferr[m]) max_ferr[m] = af;
-            if (af >= SETTLE_THRESH) last_big[m] = seg_cycle;
+        if (dwell) {
+            int dc = seg_cycle - mv;
+            for (int m = 0; m < n; m++) {
+                int32_t f = tx[m]->following_error;
+                int64_t af = (f < 0) ? -(int64_t)f : (int64_t)f;
+                if (af > max_ferr[m]) max_ferr[m] = af;
+                if (af >= SETTLE_THRESH) last_big[m] = dc;
+            }
+            if (dc % 200 == 0) {
+                printf("  +%4dms: M0 ferr=%+7d", dc, tx[0]->following_error);
+                if (n >= 2) printf("   M1 ferr=%+7d", tx[1]->following_error);
+                printf("\n");
+            }
         }
 
         ecx_send_processdata(&ctx);
 
-        if (seg_cycle % 200 == 0) {
-            printf("  +%4dms: M0 ferr=%+7d", seg_cycle, tx[0]->following_error);
-            if (n >= 2) printf("   M1 ferr=%+7d", tx[1]->following_error);
-            printf("\n");
-        }
-
         seg_cycle++;
-        if (seg_cycle >= SEGS[seg].dwell_ms) {
+        if (seg_cycle >= mv + SEGS[seg].dwell_ms) {
             printf("  => M0 max_ferr=%-6lld settle=%-4dms", (long long)max_ferr[0], last_big[0]);
             if (n >= 2) printf(" | M1 max_ferr=%-6lld settle=%-4dms", (long long)max_ferr[1], last_big[1]);
             printf("\n");
+            for (int m = 0; m < n; m++) cmd_pos[m] += SEGS[seg].target;
             seg++;
             seg_cycle = 0;
         }
