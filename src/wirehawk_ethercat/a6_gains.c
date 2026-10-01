@@ -1,14 +1,16 @@
-/* a6_gains.c — dump + diff the A6-EC tuning objects on BOTH daisy-chained drives.
+/* a6_gains.c — dump + diff the A6-EC tuning & identity objects on BOTH drives.
  *
  * Usage: sudo ./a6_gains <ifname>
  *
- * Reads 0x2000 (C00 group: inertia ratio, stiffness, ...) and 0x2001 (C01
- * group: gain parameters) over CoE SDO, in Safe-OP (motors stay disabled).
- * Prints every sub-index side-by-side for drive A (slave 1) and B (slave 2),
- * flagging any value that differs between the two drives with " <<<< DIFF".
+ * Sweeps, side-by-side for drive A (slave 1) and B (slave 2):
+ *   identity objects (0x1008 name, 0x1009 hw rev, 0x100A firmware),
+ *   0x2000 (C00 basic/inertia/stiffness), 0x2001 (C01 gains),
+ *   0x2002 + 0x2003 (advanced: MFC / observers / vibration suppression),
+ *   and a set of CiA-402 behaviour objects (mode, positioning option,
+ *   interpolation time, polarity, profile accel/decel, motor type).
+ * Any value that differs between the two drives is flagged " <<<< DIFF".
  *
- * Note: 0x2001 sub-indices follow the ESI DT2001 type (not 1..N in a row):
- *   1st gain set = sub 1..4, 2nd gain set = sub 9..12.
+ * Runs in Safe-OP (motors stay disabled). Safe with motors idle.
  */
 #include "soem/soem.h"
 #include <stdio.h>
@@ -23,6 +25,14 @@ static int rd32(uint16_t slave, uint16_t idx, uint8_t sub, uint32_t* v)
     int sz = sizeof(*v);
     *v = 0;
     int wkc = ecx_SDOread(&ctx, slave, idx, sub, FALSE, &sz, v, EC_TIMEOUTSAFE);
+    return wkc > 0;
+}
+
+static int rd_str(uint16_t slave, uint16_t idx, uint8_t sub, char* buf, int buflen)
+{
+    memset(buf, 0, (size_t)buflen);
+    int sz = buflen - 1;
+    int wkc = ecx_SDOread(&ctx, slave, idx, sub, FALSE, &sz, buf, EC_TIMEOUTSAFE);
     return wkc > 0;
 }
 
@@ -59,6 +69,28 @@ static void dump(uint16_t idx, uint8_t max_sub)
     }
 }
 
+static void ident(uint16_t idx, const char* label)
+{
+    char a[64], b[64];
+    int oka = rd_str(1, idx, 0, a, sizeof(a));
+    int okb = rd_str(2, idx, 0, b, sizeof(b));
+    const char* mark = (oka != okb) || (oka && okb && strcmp(a, b) != 0) ? "  <<<< DIFF" : "";
+    printf("  0x%04X  %-22s  A=%-24s B=%-24s%s\n", idx, label,
+           oka ? a : "FAIL", okb ? b : "FAIL", mark);
+}
+
+static void cia(uint16_t idx, uint8_t sub, const char* label)
+{
+    uint32_t a = 0, b = 0;
+    int oka = rd32(1, idx, sub, &a);
+    int okb = rd32(2, idx, sub, &b);
+    char sa[16], sb[16];
+    snprintf(sa, sizeof(sa), oka ? "%u" : "FAIL", a);
+    snprintf(sb, sizeof(sb), okb ? "%u" : "FAIL", b);
+    const char* mark = (oka != okb) || (oka && okb && a != b) ? "  <<<< DIFF" : "";
+    printf("  0x%04X:%02d  %-22s  A=%-10s B=%-10s%s\n", idx, sub, label, sa, sb, mark);
+}
+
 int main(int argc, char** argv)
 {
     if (argc != 2) {
@@ -83,10 +115,29 @@ int main(int argc, char** argv)
     ecx_statecheck(&ctx, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
     printf("SAFE_OP reached\n");
 
+    printf("== identity ==\n");
+    ident(0x1008, "device name");
+    ident(0x1009, "hardware version");
+    ident(0x100A, "software/firmware");
+
     printf("== 0x2000 (C00: basic / inertia / stiffness) ==\n");
     dump(0x2000, 20);
     printf("== 0x2001 (C01: gain parameters) ==\n");
     dump(0x2001, 20);
+    printf("== 0x2002 (C02: advanced tuning) ==\n");
+    dump(0x2002, 16);
+    printf("== 0x2003 (C03: advanced tuning) ==\n");
+    dump(0x2003, 16);
+
+    printf("== CiA-402 behaviour ==\n");
+    cia(0x6060, 0, "mode of operation");
+    cia(0x60F2, 0, "positioning option");
+    cia(0x60C2, 1, "interp time period");
+    cia(0x60C2, 2, "interp time index");
+    cia(0x60E0, 0, "polarity");
+    cia(0x6083, 0, "profile accel");
+    cia(0x6084, 0, "profile decel");
+    cia(0x6402, 0, "motor type");
 
     ecx_close(&ctx);
     return 0;
