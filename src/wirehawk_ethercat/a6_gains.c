@@ -42,14 +42,20 @@ static int wr_u16(uint16_t slave, uint16_t idx, uint8_t sub, uint16_t v)
 static void print_both(void)
 {
     uint16_t ia = 0, ib = 0;
-    rd_u16(1, 0x2000, 6, &ia);
-    rd_u16(2, 0x2000, 6, &ib);
-    printf("  %-22s  A=%-6u  B=%-6u\n", "inertia ratio C00.06", ia, ib);
+    int oka = rd_u16(1, 0x2000, 6, &ia);
+    int okb = rd_u16(2, 0x2000, 6, &ib);
+    char a1[16], b1[16];
+    snprintf(a1, sizeof(a1), oka ? "%u" : "FAIL", ia);
+    snprintf(b1, sizeof(b1), okb ? "%u" : "FAIL", ib);
+    printf("  %-22s  A=%-8s  B=%-8s\n", "inertia ratio C00.06", a1, b1);
     for (int i = 0; i < 8; i++) {
         uint16_t a = 0, b = 0;
-        rd_u16(1, 0x2001, (uint8_t)(i + 1), &a);
-        rd_u16(2, 0x2001, (uint8_t)(i + 1), &b);
-        printf("  %-22s  A=%-6u  B=%-6u\n", GNAMES[i], a, b);
+        int oka2 = rd_u16(1, 0x2001, (uint8_t)(i + 1), &a);
+        int okb2 = rd_u16(2, 0x2001, (uint8_t)(i + 1), &b);
+        char sa[16], sb[16];
+        snprintf(sa, sizeof(sa), oka2 ? "%u" : "FAIL", a);
+        snprintf(sb, sizeof(sb), okb2 ? "%u" : "FAIL", b);
+        printf("  %-22s  A=%-8s  B=%-8s\n", GNAMES[i], sa, sb);
     }
 }
 
@@ -70,6 +76,15 @@ int main(int argc, char** argv)
         ecx_close(&ctx);
         return 1;
     }
+
+    /* Reach Safe-OP so the CoE mailbox (SDO) is available. No PDO parsing,
+     * no DC, no OP — we only need SDO here. */
+    {
+        uint8_t io_map[4096] = {0};
+        ec_config_map_group(&ctx, io_map, 0);
+    }
+    ecx_statecheck(&ctx, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
+    printf("SAFE_OP reached\n");
 
     printf("== params BEFORE ==\n");
     print_both();
