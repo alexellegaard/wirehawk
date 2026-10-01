@@ -125,7 +125,8 @@ int main(int argc, char *argv[])
     if (ecx_config_init(&ctx) <= 0) { printf("no slaves\n"); ecx_close(&ctx); return 1; }
     printf("%d slave(s)\n", ctx.slavecount);
     n = ctx.slavecount;
-    if (n < 2) { printf("need 2 slaves (found %d)\n", n); ecx_close(&ctx); return 1; }
+    if (n < 1) { printf("no slaves\n"); ecx_close(&ctx); return 1; }
+    if (n < 2) printf("NOTE: only %d slave(s), testing it alone\n", n);
 
     ecx_configdc(&ctx);
     osal_usleep(500000);
@@ -216,15 +217,17 @@ int main(int argc, char *argv[])
 
         ecx_send_processdata(&ctx);
 
-        if (seg_cycle % 200 == 0)
-            printf("  +%4dms: M0 ferr=%+7d   M1 ferr=%+7d\n",
-                   seg_cycle, tx[0]->following_error, tx[1]->following_error);
+        if (seg_cycle % 200 == 0) {
+            printf("  +%4dms: M0 ferr=%+7d", seg_cycle, tx[0]->following_error);
+            if (n >= 2) printf("   M1 ferr=%+7d", tx[1]->following_error);
+            printf("\n");
+        }
 
         seg_cycle++;
         if (seg_cycle >= SEGS[seg].dwell_ms) {
-            printf("  => M0 max_ferr=%-6lld settle=%-4dms | M1 max_ferr=%-6lld settle=%-4dms\n",
-                   (long long)max_ferr[0], last_big[0],
-                   (long long)max_ferr[1], last_big[1]);
+            printf("  => M0 max_ferr=%-6lld settle=%-4dms", (long long)max_ferr[0], last_big[0]);
+            if (n >= 2) printf(" | M1 max_ferr=%-6lld settle=%-4dms", (long long)max_ferr[1], last_big[1]);
+            printf("\n");
             seg++;
             seg_cycle = 0;
         }
