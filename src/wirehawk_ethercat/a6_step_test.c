@@ -154,7 +154,6 @@ int main(int argc, char *argv[])
     exchange();
 
     int     enabled[MAX_MOTORS] = {0, 0};
-    int     fault_reset[MAX_MOTORS] = {0, 0};
     int32_t cmd_pos[MAX_MOTORS];   /* commanded position at segment start */
 
     int64 toff = 0;
@@ -189,12 +188,17 @@ int main(int argc, char *argv[])
             uint16_t state = sw & 0x006F;
 
             if (sw & 0x0008) {
-                fault_reset[m] = !fault_reset[m];
-                rx[m]->control_word = fault_reset[m] ? 0x0080 : 0x0000;
+                /* Fault: hold the reset bit high (edge-triggered). Once the
+                 * fault clears, the normal state machine below re-arms it. */
+                rx[m]->control_word = 0x0080;
                 enabled[m] = 0;
                 continue;
             }
             if (!enabled[m]) {
+                /* Pin the target to the live actual position the whole time the
+                 * drive is enabling, so the moment it reaches "operation
+                 * enabled" there is zero position error -> no jump. */
+                rx[m]->target_position = tx[m]->position_actual;
                 if ((sw & 0x004F) == 0x0040)      rx[m]->control_word = 0x0006;
                 else if (state == 0x0021)         rx[m]->control_word = 0x0007;
                 else if (state == 0x0023)         rx[m]->control_word = 0x000F;
