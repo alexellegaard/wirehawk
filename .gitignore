@@ -19,6 +19,7 @@ src/wirehawk_ethercat/a6_csp_rt
 src/wirehawk_ethercat/a6_pp
 src/wirehawk_ethercat/a6_pp_rt
 src/wirehawk_ethercat/a6_reset
+src/wirehawk_ethercat/a6_two_motors
 # Stray duplicate source
 src/wirehawk_ethercat/a6_csp copy.c
 # Vendor reference (large binary)
