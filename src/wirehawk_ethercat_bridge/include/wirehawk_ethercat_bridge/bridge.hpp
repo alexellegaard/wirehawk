@@ -21,7 +21,7 @@ struct Config {
     int     rt_cpu         = 3;          // core the RT thread is pinned to
     double  max_speed      = 131072.0;   // counts/s   (trapezoid speed limit)
     double  max_accel      = 1310720.0;  // counts/s^2 (trapezoid accel limit)
-    int64_t counts_offset  = 0;          // added to commanded target (spool-zero -> drive-zero calibration)
+    std::array<int64_t, MAX_MOTORS> counts_offset{};  // per-motor: added to commanded target (spool-zero -> drive-zero calibration)
 };
 
 // Shared state between the RT thread (SOEM loop) and the ROS2 thread.

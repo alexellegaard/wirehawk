@@ -3,9 +3,10 @@ ethercat_bridge:
     interface: "eth0"            # EtherCAT NIC on the master machine
     cycle_ns: 1000000            # 1 ms EtherCAT cycle (integer multiple of 250 us)
     counts_per_rev: 131072       # A6-1000EC 17-bit encoder
-    num_motors: 1                # bench: 1; 2D CDPR: 2; full: 4
+    num_motors: 2                # bench: 2 motors = anchor 0 + anchor 1
     rt_cpu: 3                    # isolated core the RT thread is pinned to
     max_speed: 6553600.0         # counts/s  (50 rev/s = drive rated 3000 rpm; ~3.1 m/s cable at core layer)
     max_accel: 20000000.0        # counts/s^2 (reaches 50 rev/s in ~0.3 s)
-    counts_offset: -49539997     # zeroes the drive at the 40x40_3m start pose (spool counts at [0,0,1.5]).
-                                 # World-specific: recompute for a different world/start pose. 0 = no offset.
+    counts_offset: [-49539997, -49539997]   # per-motor zeroing at the 40x40_3m start pose.
+                                             # anchor 0 & 1 share the start length by symmetry; set a
+                                             # different value per motor if physically zeroed differently.
