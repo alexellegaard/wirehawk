@@ -1,7 +1,10 @@
 ethercat_bridge:
   ros__parameters:
     interface: "eth0"            # EtherCAT NIC on the master machine
-    cycle_ns: 1000000            # 1 ms EtherCAT cycle (integer multiple of 250 us)
+    cycle_ns: 4000000            # 4 ms EtherCAT cycle (16 x 250 us). Lowered from 1 ms: control is
+                                 # ~100 Hz so 1 kHz SYNC0 was overkill, and the slave-2 clock jitter
+                                 # (2.7 us absolute) is a smaller RELATIVE fraction of a longer cycle
+                                 # -> ~4x less velocity noise on the daisy-chained drive.
     counts_per_rev: 131072       # A6-1000EC 17-bit encoder
     num_motors: 2                # bench: 2 motors = anchor 0 + anchor 1
     rt_cpu: 3                    # isolated core the RT thread is pinned to
