@@ -30,7 +30,9 @@ integer multiple of 250 µs and ≥ ~1.25× the command period (~100 Hz control)
 
 - Gains: Kp=400 (0x2001:01), Kv=250 (0x2001:02).
 - Speed-feedback filter: sel=0 internal, cutoff 8000 Hz, avg=0 (0x2001:17/18/19).
-- Load moment of inertia ratio: 0x2000:07 = 100 (verify semantics before trusting).
+- Load moment of inertia ratio: 0x2000:07, 0–12000 %, 0 = no load, 100 = 1:1. Ships at 100.
+- Auto-tune config (C07 group, 0x2007:01–05): ships at **0 on these A6-EC drives** (NOT the manual's 769/500/100/150/200 defaults). C07.01 (speed) and C07.04 (revolutions) must be set before the offline auto-tune can sweep — 0 means nothing to move, which is why F30.10 did nothing.
+- **Parameter writes are RETENTIVE** — they survive a power cycle (inertia ratio stayed 0 after power-off even with "power-off memory selection" 0x2006:04 = 0). Undo a bad value explicitly; power-off does NOT reset the bench.
 - Sync mode: 0x2013:06 — set to 2 (Sync 2) for a host with >1 µs jitter.
 
 ## Tools (src/ethercat/)
@@ -41,6 +43,8 @@ integer multiple of 250 µs and ≥ ~1.25× the command period (~100 Hz control)
 | `a6_sync`    | DC clock diagnostic: 64-bit 0x0910 cycle jitter (both slaves), optional 0x0934 sweep |
 | `a6_filter`  | Read/set speed-feedback filter (0x2001:17/18/19) |
 | `a6_gain`    | Read/set position/speed loop gains (0x2001:01/02) |
+| `a6_inertia` | Read/set load-inertia ratio (C00.06) + stiffness level (C00.05); `tune` triggers the offline inertia auto-tune |
+| `a6_fault`   | Read 0x203F drive fault + 0x603F CiA error + 0x6041 status |
 | `a6_set_profile` | Read/set profile accel/decel (0x6083/0x6084 — PP mode only, red herring in CSP) |
 | `a6_step_test` / `a6_two_motors` | Gentle ramped bench-motion scripts |
 
