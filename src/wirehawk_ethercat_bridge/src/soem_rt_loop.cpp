@@ -223,6 +223,11 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
     // ---- motion state init (hold current position) ----
     MotionState motion[MAX_MOTORS];
     bool fault_reset[MAX_MOTORS] = {false};
+    // Auto-zero: on enable, latch raw−logical so the first streamed target maps
+    // onto the current position (no startup slew). Makes counts_offset a fixed
+    // bias rather than a fragile absolute zero; re-latched every enable.
+    int64_t zero_offset[MAX_MOTORS] = {0};
+    bool    zeroed[MAX_MOTORS] = {false};
     for (int i = 0; i < N; i++) {
         motion[i].cmd = tx[i]->position_actual;
         motion[i].vel = 0.0;
@@ -295,9 +300,19 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                 motion[i].cmd = tx[i]->position_actual;
                 motion[i].vel = 0.0;
                 rx[i]->target_position = motion[i].cmd;
+                zeroed[i] = false;                   // re-latch offset on this enable
                 all_enabled = false;
             } else if (state == 0x0027) {            // operation enabled -> stream
-                int32_t tgt = (data->target_valid.load()) ? target[i] : motion[i].cmd;
+                int32_t tgt = motion[i].cmd;
+                if (data->target_valid.load()) {
+                    if (!zeroed[i]) {                // auto-zero once per enable
+                        zero_offset[i] = (int64_t)tx[i]->position_actual - (int64_t)target[i];
+                        zeroed[i] = true;
+                        printf("RT: motor %d auto-zero offset = %lld counts\n",
+                               i, (long long)zero_offset[i]);
+                    }
+                    tgt = (int32_t)((int64_t)target[i] + zero_offset[i]);
+                }
                 step_trapezoid(motion[i], tgt, g_cfg.max_speed, g_cfg.max_accel, dt);
                 rx[i]->target_position = motion[i].cmd;
                 rx[i]->control_word = 0x000F;

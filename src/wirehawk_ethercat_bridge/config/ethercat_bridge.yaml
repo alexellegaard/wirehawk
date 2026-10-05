@@ -7,6 +7,6 @@ ethercat_bridge:
     rt_cpu: 3                    # isolated core the RT thread is pinned to
     max_speed: 6553600.0         # counts/s  (50 rev/s = drive rated 3000 rpm; ~3.1 m/s cable at core layer)
     max_accel: 20000000.0        # counts/s^2 (reaches 50 rev/s in ~0.3 s)
-    counts_offset: [-49539997, -49486411]   # per-motor zeroing at the 40x40_3m start pose.
-                                             # M1 (anchor 1) reads ~53586 counts above M0's zero on the
-                                             # bench (cmd-2/state-2 logs), so its offset is shifted +53586.
+    counts_offset: [0, 0]           # fixed bias on top of auto-zero (0 = mirror current pose on enable).
+                                    # Auto-zero latches raw−logical at each enable, so no absolute
+                                    # zero is needed on the bench (motors move between sessions).

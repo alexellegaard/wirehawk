@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="560" viewBox="0 0 1240 560" font-family="Segoe UI, Arial, sans-serif">
+<defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8.5" refY="3" orient="auto"><path d="M0,0 L8.5,3 L0,6 z" fill="#444"/></marker>
+<marker id="arrG" markerWidth="10" markerHeight="10" refX="8.5" refY="3" orient="auto"><path d="M0,0 L8.5,3 L0,6 z" fill="#888"/></marker></defs>
+<rect width="1240" height="560" fill="#ffffff"/>
+<path d="M140.0,110 140.0,180" fill="none" stroke="#444" stroke-width="1.6" marker-end="url(#arr)"/>
+<path d="M250,235.0 330,235.0" fill="none" stroke="#444" stroke-width="1.6" marker-end="url(#arr)"/>
+<path d="M490,235.0 530,235.0 530,80.0 570,80.0" fill="none" stroke="#444" stroke-width="1.6" marker-end="url(#arr)"/>
+<path d="M490,235.0 530,235.0 530,280.0 570,280.0" fill="none" stroke="#444" stroke-width="1.6" marker-end="url(#arr)"/>
+<path d="M820,80.0 900,80.0" fill="none" stroke="#444" stroke-width="1.6" marker-end="url(#arr)"/>
+<path d="M820,280.0 900,280.0" fill="none" stroke="#444" stroke-width="1.6" marker-end="url(#arr)"/>
+<path d="M1035.0,120 1035.0,470 130,470 130,290" fill="none" stroke="#999" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#arrG)"/>
+<path d="M1035.0,320 1035.0,510 150,510 150,290" fill="none" stroke="#999" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#arrG)"/>
+<text x="290" y="227" text-anchor="middle" font-size="11" fill="#666">commands</text>
+<text x="860" y="70" text-anchor="middle" font-size="11" fill="#666">commands</text>
+<text x="860" y="270" text-anchor="middle" font-size="11" fill="#666">commands</text>
+<text x="250" y="462" text-anchor="middle" font-size="11" fill="#666">state</text>
+<text x="270" y="502" text-anchor="middle" font-size="11" fill="#666">state</text>
+<rect x="30" y="40" width="220" height="70" rx="8" fill="#fff2cc" stroke="#d6b656" stroke-width="1.5"/>
+<text x="140.0" y="71" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">Operator input</text>
+<text x="140.0" y="88" text-anchor="middle" font-size="13" font-weight="400" fill="#333">keyboard / trajectory planner</text>
+<rect x="30" y="180" width="220" height="110" rx="8" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5"/>
+<text x="140.0" y="214" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">Controller</text>
+<text x="140.0" y="231" text-anchor="middle" font-size="13" font-weight="400" fill="#333">(backend-agnostic)</text>
+<text x="140.0" y="248" text-anchor="middle" font-size="13" font-weight="400" fill="#333">plans &amp; corrects —</text>
+<text x="140.0" y="265" text-anchor="middle" font-size="13" font-weight="400" fill="#333">identical in sim &amp; real</text>
+<rect x="330" y="180" width="160" height="110" rx="8" fill="#f5f5f5" stroke="#666666" stroke-width="1.5"/>
+<text x="410.0" y="222" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">Interface</text>
+<text x="410.0" y="240" text-anchor="middle" font-size="13" font-weight="400" fill="#333">commands ↓</text>
+<text x="410.0" y="256" text-anchor="middle" font-size="13" font-weight="400" fill="#333">state ↑</text>
+<rect x="570" y="40" width="250" height="80" rx="8" fill="#d5e8d4" stroke="#82b366" stroke-width="1.5"/>
+<text x="695.0" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">Simulation backend</text>
+<text x="695.0" y="93" text-anchor="middle" font-size="13" font-weight="400" fill="#333">(digital twin)</text>
+<rect x="900" y="40" width="270" height="80" rx="8" fill="#f8cecc" stroke="#b85450" stroke-width="1.5"/>
+<text x="1035.0" y="76" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">Virtual machine</text>
+<text x="1035.0" y="93" text-anchor="middle" font-size="13" font-weight="400" fill="#333">physics + virtual sensors</text>
+<rect x="570" y="240" width="250" height="80" rx="8" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.5"/>
+<text x="695.0" y="276" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">Hardware backend</text>
+<text x="695.0" y="293" text-anchor="middle" font-size="13" font-weight="400" fill="#333">(EtherCAT → drives)</text>
+<rect x="900" y="240" width="270" height="80" rx="8" fill="#f8cecc" stroke="#b85450" stroke-width="1.5"/>
+<text x="1035.0" y="276" text-anchor="middle" font-size="13" font-weight="700" fill="#1a1a1a">Physical machine</text>
+<text x="1035.0" y="293" text-anchor="middle" font-size="13" font-weight="400" fill="#333">winches + real sensors</text>
+</svg>

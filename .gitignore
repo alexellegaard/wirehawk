@@ -14,16 +14,16 @@ __pycache__/
 *~
 # OS artifacts
 .DS_Store
-# Compiled SOEM bench binaries (built by src/wirehawk_ethercat/Makefile)
-src/wirehawk_ethercat/a6_csp_rt
-src/wirehawk_ethercat/a6_pp
-src/wirehawk_ethercat/a6_pp_rt
-src/wirehawk_ethercat/a6_reset
-src/wirehawk_ethercat/a6_two_motors
-src/wirehawk_ethercat/a6_gains
-src/wirehawk_ethercat/a6_set_profile
-src/wirehawk_ethercat/a6_step_test
+# Compiled SOEM bench binaries (built by src/ethercat/Makefile)
+src/ethercat/a6_csp_rt
+src/ethercat/a6_pp
+src/ethercat/a6_pp_rt
+src/ethercat/a6_reset
+src/ethercat/a6_two_motors
+src/ethercat/a6_gains
+src/ethercat/a6_set_profile
+src/ethercat/a6_step_test
 # Stray duplicate source
-src/wirehawk_ethercat/a6_csp copy.c
+src/ethercat/a6_csp copy.c
 # Vendor reference (large binary)
 A6-EC_series_servo_drive_manual.pdf

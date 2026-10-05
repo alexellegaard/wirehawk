@@ -7,9 +7,8 @@
  * any value that differs " <<<< DIFF".
  *
  * Sub-index NAMES come from the ESI XML (STEPPERONLINE_A6_Servo_V0.02.xml).
- * NOTE: the firmware is V512 and the ESI is V0.02, so for 0x2001/0x2002 the
- * name of a sub-index may be shifted vs the real firmware. The <<<< DIFF flag
- * is authoritative — trust the flag, not the label.
+ * NOTE: firmware is V512, ESI is V0.02, so 0x2001/0x2002 names may be shifted
+ * vs the real firmware. The <<<< DIFF flag is authoritative — trust the flag.
  *
  * Runs in Safe-OP (motors stay disabled). Safe with motors idle.
  */
@@ -118,7 +117,7 @@ static void dumpobj(const ObjDef* d)
         uint32_t a = 0, b = 0;
         int oka = rd32(1, d->idx, s, &a);
         int okb = rd32(2, d->idx, s, &b);
-        if (!oka && !okb) continue;              /* not readable on either -> skip noise */
+        if (!oka && !okb) continue;
         char sa[16], sb[16];
         snprintf(sa, sizeof(sa), oka ? "%u" : "FAIL", a);
         snprintf(sb, sizeof(sb), okb ? "%u" : "FAIL", b);
