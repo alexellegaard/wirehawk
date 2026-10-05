@@ -1,10 +1,10 @@
 ethercat_bridge:
   ros__parameters:
     interface: "eth0"            # EtherCAT NIC on the master machine
-    cycle_ns: 8000000            # 8 ms EtherCAT cycle (32 x 250 us). 250 Hz was "much better" but the
-                                 # daisy-chained slave still wobbled; 8 ms halves the relative clock
-                                 # jitter again (2.7 us / 8 ms = 0.034%). Still 1.25x faster than the
-                                 # ~100 Hz control tick — do not go lower (would undersample the command).
+    cycle_ns: 4000000            # 4 ms EtherCAT cycle (16 x 250 us). 125 Hz (8 ms) overshot: the
+                                 # clock-jitter benefit flattened out but the position loop got coarse
+                                 # (0.15 rev/update at 5 m/s), so even the clean motor rippled. 4 ms is
+                                 # the sweet spot: 4x less clock jitter than 1 kHz, still a fine loop.
     counts_per_rev: 131072       # A6-1000EC 17-bit encoder
     num_motors: 2                # bench: 2 motors = anchor 0 + anchor 1
     rt_cpu: 3                    # isolated core the RT thread is pinned to
