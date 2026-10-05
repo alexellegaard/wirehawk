@@ -44,7 +44,8 @@ def generate_launch_description():
     # sources (goal-based vs manual) and must NOT run at the same time — the
     # planner holds its initial pose and would cancel teleop input. Launch them
     # manually:
-    #   ros2 run wirehawk_control keyboard_teleop
+    #   ros2 run wirehawk_control keyboard_teleop --ros-args \
+    #       --params-file <install>/share/wirehawk_control/config/cdpr_params_<world>.yaml
     #   ros2 run wirehawk_control trajectory_planner --ros-args \
     #       --params-file <install>/share/wirehawk_control/config/cdpr_params_<world>.yaml
 

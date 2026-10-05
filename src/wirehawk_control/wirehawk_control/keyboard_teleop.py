@@ -3,6 +3,7 @@ import termios
 import tty
 import select
 import math
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -21,7 +22,7 @@ Movement:
 Speed (m/s):
    1:0.2   2:0.5   3:1.0   4:2.0   5:5.0
 
-SPACEBAR : Stop immediately
+SPACEBAR : Stop (ramped)
 CTRL+C   : Quit
 --------------------------------------------------
 """
@@ -48,14 +49,24 @@ class KeyboardTeleop(Node):
         # Publish explicitly to /cmd_vel
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
-        # Default linear speed (m/s)
+        # Rate-limited velocity: the smoothing lives HERE (control layer), so
+        # sim and real both receive a smooth /cmd_vel and the bridges stay dumb
+        # pass-throughs + a motor-level safety clamp. Params come from the
+        # cdpr_params_<world>.yaml (single source of truth).
+        self.declare_parameter('max_linear_speed', 5.0)   # m/s cap
+        self.declare_parameter('max_linear_accel', 2.0)   # m/s^2 ramp rate
+        self.declare_parameter('rate_hz', 30.0)
+        self.max_speed = float(self.get_parameter('max_linear_speed').value)
+        self.max_accel = float(self.get_parameter('max_linear_accel').value)
+        self.dt = 1.0 / float(self.get_parameter('rate_hz').value)
+
+        # Default linear speed (m/s), target velocity (keys), actual velocity (ramped)
         self.speed = 0.5
-        self.vx = 0.0
-        self.vy = 0.0
-        self.vz = 0.0
+        self.target_vel = np.zeros(3, dtype=float)
+        self.vel = np.zeros(3, dtype=float)
 
         # High publish rate (30 Hz) keeps the controller watchdog happy
-        self.timer = self.create_timer(1.0 / 30.0, self.timer_publish)
+        self.timer = self.create_timer(self.dt, self.timer_publish)
 
         # Terminal state setup for non-blocking single key reads
         self.orig_term_settings = termios.tcgetattr(sys.stdin)
@@ -66,14 +77,23 @@ class KeyboardTeleop(Node):
 
     def _print_status(self, note=''):
         """Single status line: current speed + commanded velocity, updated in place."""
-        vel = f"Move -> X:{self.vx:+.1f} | Y:{self.vy:+.1f} | Z:{self.vz:+.1f} m/s"
+        vel = f"Move -> X:{self.vel[0]:+.1f} | Y:{self.vel[1]:+.1f} | Z:{self.vel[2]:+.1f} m/s"
         print(f"\r[Speed {self.speed:g} m/s] {vel}  {note}", end='', flush=True)
 
     def timer_publish(self):
+        # Ramp the actual velocity toward the key target, bounded by max_accel.
+        dv = self.target_vel - self.vel
+        mag = float(np.linalg.norm(dv))
+        max_dv = self.max_accel * self.dt
+        if mag > max_dv:
+            self.vel = self.vel + (dv / mag) * max_dv
+        else:
+            self.vel = self.target_vel.copy()
+
         msg = Twist()
-        msg.linear.x = self.vx
-        msg.linear.y = self.vy
-        msg.linear.z = self.vz
+        msg.linear.x = float(self.vel[0])
+        msg.linear.y = float(self.vel[1])
+        msg.linear.z = float(self.vel[2])
         self.pub.publish(msg)
 
     def run(self):
@@ -95,27 +115,21 @@ class KeyboardTeleop(Node):
 
                 if key in MOVE_BINDINGS:
                     dx, dy, dz = MOVE_BINDINGS[key]
-                    self.vx = dx * self.speed
-                    self.vy = dy * self.speed
-                    self.vz = dz * self.speed
+                    self.target_vel = np.array([dx, dy, dz], dtype=float) * self.speed
                     self._print_status()
 
                 elif key in SPEED_BINDINGS:
                     self.speed = SPEED_BINDINGS[key]
-                    # Rescale active velocities if currently moving (use true magnitude)
-                    norm = math.hypot(self.vx, self.vy, self.vz)
+                    # Rescale active target if currently moving (use true magnitude)
+                    norm = float(np.linalg.norm(self.target_vel))
                     if norm > 0.0:
-                        self.vx = (self.vx / norm) * self.speed
-                        self.vy = (self.vy / norm) * self.speed
-                        self.vz = (self.vz / norm) * self.speed
+                        self.target_vel = (self.target_vel / norm) * self.speed
                         self._print_status()
                     else:
                         self._print_status('(applies on next move key)')
 
                 elif key == ' ':
-                    self.vx = 0.0
-                    self.vy = 0.0
-                    self.vz = 0.0
+                    self.target_vel = np.zeros(3)
                     self._print_status('STOPPED')
 
         finally:
