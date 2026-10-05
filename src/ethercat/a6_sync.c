@@ -209,15 +209,20 @@ int main(int argc, char *argv[])
                s, (int32_t)offset, delay, filt, syncact);
     }
 
-    /* ---- sample 0x092C (system time difference) + clock drift at 1 kHz ---- */
-    printf("\nSampling 0x092C (system time difference, ns) + clock drift at 1 kHz for %d s...\n", NSAMPLES / 1000);
+    /* ---- sample 64-bit system time (0x0910) EVERY cycle; measure jitter ---- */
+    printf("\nSampling system time (0x0910) at 1 kHz for %d s...\n", NSAMPLES / 1000);
     {
         int64 toff = 0;
-        /* Welford accumulators (numerically stable) */
-        double mean[MAX_MOTORS] = {0}, m2[MAX_MOTORS] = {0};
-        int32_t mn[MAX_MOTORS], mx[MAX_MOTORS];
-        long long cnt[MAX_MOTORS] = {0};
-        uint64_t syst0[MAX_MOTORS] = {0}, syst1[MAX_MOTORS] = {0};
+        /* cycle-to-cycle delta stats per slave (Welford, numerically stable) */
+        double dmean[MAX_MOTORS] = {0}, dm2[MAX_MOTORS] = {0};
+        int64_t dmin[MAX_MOTORS], dmax[MAX_MOTORS];
+        long long dcnt[MAX_MOTORS] = {0};
+        /* slave2 - slave1 difference stats */
+        double xmean = 0, xm2 = 0;
+        int64_t xmin = 0, xmax = 0;
+        long long xcnt = 0;
+        uint64_t prev[MAX_MOTORS] = {0};
+        int have_prev = 0;
         struct timespec next;
         clock_gettime(CLOCK_MONOTONIC, &next);
         next.tv_nsec = ((next.tv_nsec / 1000000) + 1) * 1000000;
@@ -232,23 +237,38 @@ int main(int argc, char *argv[])
             if (wkc > 0)
                 ec_sync(ctx.DCtime, CYCLE_NS, &toff);
 
-            if (i == 0)
-                for (int s = 1; s <= n; s++) syst0[s - 1] = rdsystime(s);
-
+            uint64_t now[MAX_MOTORS];
             for (int s = 1; s <= n; s++)
-            {
-                int32_t v = (int32_t)rdreg(s, 0x092C);
-                int idx = s - 1;
-                cnt[idx]++;
-                if (cnt[idx] == 1) { mn[idx] = mx[idx] = v; }
-                else { if (v < mn[idx]) mn[idx] = v; if (v > mx[idx]) mx[idx] = v; }
-                double delta = (double)v - mean[idx];
-                mean[idx] += delta / (double)cnt[idx];
-                m2[idx] += delta * ((double)v - mean[idx]);
-            }
+                now[s - 1] = rdsystime(s);
 
-            if (i == NSAMPLES - 1)
-                for (int s = 1; s <= n; s++) syst1[s - 1] = rdsystime(s);
+            if (have_prev)
+            {
+                for (int s = 1; s <= n; s++)
+                {
+                    int idx = s - 1;
+                    int64_t delta = (int64_t)(now[idx] - prev[idx]);
+                    dcnt[idx]++;
+                    if (dcnt[idx] == 1) { dmin[idx] = dmax[idx] = delta; }
+                    else { if (delta < dmin[idx]) dmin[idx] = delta; if (delta > dmax[idx]) dmax[idx] = delta; }
+                    double dv = (double)delta;
+                    double dd = dv - dmean[idx];
+                    dmean[idx] += dd / (double)dcnt[idx];
+                    dm2[idx] += dd * (dv - dmean[idx]);
+                }
+                if (n >= 2)
+                {
+                    int64_t diff = (int64_t)(now[1] - now[0]);
+                    xcnt++;
+                    if (xcnt == 1) { xmin = xmax = diff; }
+                    else { if (diff < xmin) xmin = diff; if (diff > xmax) xmax = diff; }
+                    double dv = (double)diff;
+                    double dd = dv - xmean;
+                    xmean += dd / (double)xcnt;
+                    xm2 += dd * (dv - xmean);
+                }
+            }
+            have_prev = 1;
+            for (int s = 1; s <= n; s++) prev[s - 1] = now[s - 1];
 
             /* keep drives disabled and holding (no motion) */
             for (int m = 0; m < n; m++)
@@ -259,28 +279,26 @@ int main(int argc, char *argv[])
             ecx_send_processdata(&ctx);
         }
 
-        printf("\n== System time difference (0x092C) over %lld samples ==\n", cnt[0]);
+        printf("\n== Cycle-to-cycle system-time delta (expect ~1,000,000 ns/cycle) ==\n");
         printf("  slave |    mean |     std |     min |     max  (ns)\n");
         for (int s = 1; s <= n; s++)
         {
             int idx = s - 1;
-            if (cnt[idx] == 0) { printf("  %5d | (no samples)\n", s); continue; }
-            double var = m2[idx] / (double)cnt[idx];
+            if (dcnt[idx] == 0) { printf("  %5d | (no samples)\n", s); continue; }
+            double var = dm2[idx] / (double)dcnt[idx];
             if (var < 0) var = 0;
-            printf("  %5d | %9.0f | %9.0f | %9d | %9d\n",
-                   s, mean[idx], sqrt(var), mn[idx], mx[idx]);
+            printf("  %5d | %9.0f | %9.0f | %9lld | %9lld\n",
+                   s, dmean[idx], sqrt(var), (long long)dmin[idx], (long long)dmax[idx]);
         }
 
-        printf("\n== System-time drift over the %d s window (0x0910, 64-bit) ==\n", NSAMPLES / 1000);
-        for (int s = 1; s <= n; s++)
-        {
-            int idx = s - 1;
-            printf("  slave %d: advanced %lld ns\n",
-                   s, (long long)((int64_t)(syst1[idx] - syst0[idx])));
-        }
         if (n >= 2)
-            printf("  relative drift (slave2 - slave1) = %lld ns\n",
-                   (long long)((int64_t)(syst1[1] - syst0[1]) - (int64_t)(syst1[0] - syst0[0])));
+        {
+            double var = xm2 / (double)xcnt;
+            if (var < 0) var = 0;
+            printf("\n== slave2 - slave1 system-time difference ==\n");
+            printf("  mean=%9.0f  std=%9.0f  min=%9lld  max=%9lld  (ns)\n",
+                   xmean, sqrt(var), (long long)xmin, (long long)xmax);
+        }
     }
 
     /* ---- clean shutdown (drive never enabled, so just walk states down) ---- */
