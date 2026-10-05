@@ -5,6 +5,25 @@ data/evidence — not just an opinion.
 
 ---
 
+## 2026-10-05 — Bad-drive tracking root-caused to daisy-chain DC clock jitter; sync rate matched to control rate
+
+**Decision:** Keep the EtherCAT sync at **250 Hz (4 ms)** with factory drive gains; stop chasing
+the bench wobble as a bridge bug.
+
+**Why (measured):** The "bad" motor's tracking fault followed the *2nd slave in the daisy chain*,
+not the motor and not the drive (three-swap isolation). Its DC clock is relayed through the first
+slave's ESC, so its SYNC0 carries ~2–3× the cycle-to-cycle jitter of the reference slave
+(~2.7 µs std, measured via 64-bit 0x0910, not the racy 0x092C). That jitter corrupts the drive's
+velocity estimate, so the speed loop chatters during constant-velocity motion. Matching the sync
+rate to the ~100 Hz control rate (250 Hz vs the original 1 kHz) shrinks the *relative* jitter ~4×
+and made the motor track and stop. 1 kHz was 10× overkill; 125 Hz overshot (coarse loop). The
+residual wobble on *both* motors is the free shaft + factory Kp=400 — an underdamped position loop
+that will change once the real cable+payload inertia is attached, so gains are re-derived on the
+loaded rig, not the bare bench. Speed-feedback filter (0x2001:17) tested, no help (wrong loop).
+
+**Consequence:** `cycle_ns: 4000000` in the bridge yaml; auto-zero on enable (no fixed offset);
+position register wraps at ±160 rev (0x01400000) — see `docs/ethercat-bench-notes.md`.
+
 ## 2026-09-29 — EtherCAT bridge: dedicated C++ rclcpp node (RT thread + topic bridge), kinematic-only
 
 **Decision:** Implement the EtherCAT master as a dedicated C++ rclcpp package
