@@ -6,7 +6,9 @@ ethercat_bridge:
     num_motors: 2                # bench: 2 motors = anchor 0 + anchor 1
     rt_cpu: 3                    # isolated core the RT thread is pinned to
     max_speed: 6553600.0         # counts/s  (50 rev/s = drive rated 3000 rpm; ~3.1 m/s cable at core layer)
-    max_accel: 20000000.0        # counts/s^2 (reaches 50 rev/s in ~0.3 s)
+    max_accel: 5000000.0         # counts/s^2 (reaches 50 rev/s in ~1.3 s).
+                                 # Lowered from 20000000 as a test: slave 2 (daisy-chained) rings
+                                 # under aggressive accel; checking whether the ringing scales down.
     counts_offset: [0, 0]           # fixed bias on top of auto-zero (0 = mirror current pose on enable).
                                     # Auto-zero latches raw−logical at each enable, so no absolute
                                     # zero is needed on the bench (motors move between sessions).
