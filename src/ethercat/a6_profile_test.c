@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
     int     enabled[MAX_MOTORS] = {0, 0};
     int64_t cmd_pos[MAX_MOTORS];       /* running commanded position */
     int32_t prev_pos[MAX_MOTORS];
-    VStat   vst[MAX_MOTORS];
+    VStat   vst[MAX_MOTORS] = { {0} };
     int64_t max_ferr[MAX_MOTORS] = {0, 0};
     int32_t last_vel[MAX_MOTORS] = {0, 0};
 
