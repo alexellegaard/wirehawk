@@ -115,6 +115,13 @@ static uint32_t rdreg(uint16_t slave, uint16_t addr)
     return etohl(v);
 }
 
+static uint64_t rdsystime(uint16_t slave)
+{
+    uint64_t v = 0;
+    ecx_FPRD(&ctx.port, ctx.slavelist[slave].configadr, 0x0910, sizeof(v), &v, EC_TIMEOUTRET);
+    return etohll(v);
+}
+
 int main(int argc, char *argv[])
 {
     ec_groupt *grp;
@@ -202,13 +209,15 @@ int main(int argc, char *argv[])
                s, (int32_t)offset, delay, filt, syncact);
     }
 
-    /* ---- sample 0x092C (system time difference) at 1 kHz ---- */
-    printf("\nSampling 0x092C (system time difference, ns) at 1 kHz for %d s...\n", NSAMPLES / 1000);
+    /* ---- sample 0x092C (system time difference) + clock drift at 1 kHz ---- */
+    printf("\nSampling 0x092C (system time difference, ns) + clock drift at 1 kHz for %d s...\n", NSAMPLES / 1000);
     {
         int64 toff = 0;
-        long long sum[MAX_MOTORS] = {0}, sumsq[MAX_MOTORS] = {0};
+        /* Welford accumulators (numerically stable) */
+        double mean[MAX_MOTORS] = {0}, m2[MAX_MOTORS] = {0};
         int32_t mn[MAX_MOTORS], mx[MAX_MOTORS];
-        int cnt[MAX_MOTORS] = {0};
+        long long cnt[MAX_MOTORS] = {0};
+        uint64_t syst0[MAX_MOTORS] = {0}, syst1[MAX_MOTORS] = {0};
         struct timespec next;
         clock_gettime(CLOCK_MONOTONIC, &next);
         next.tv_nsec = ((next.tv_nsec / 1000000) + 1) * 1000000;
@@ -223,16 +232,23 @@ int main(int argc, char *argv[])
             if (wkc > 0)
                 ec_sync(ctx.DCtime, CYCLE_NS, &toff);
 
+            if (i == 0)
+                for (int s = 1; s <= n; s++) syst0[s - 1] = rdsystime(s);
+
             for (int s = 1; s <= n; s++)
             {
                 int32_t v = (int32_t)rdreg(s, 0x092C);
                 int idx = s - 1;
-                if (cnt[idx] == 0) { mn[idx] = mx[idx] = v; }
-                else { if (v < mn[idx]) mn[idx] = v; if (v > mx[idx]) mx[idx] = v; }
-                sum[idx] += v;
-                sumsq[idx] += (long long)v * v;
                 cnt[idx]++;
+                if (cnt[idx] == 1) { mn[idx] = mx[idx] = v; }
+                else { if (v < mn[idx]) mn[idx] = v; if (v > mx[idx]) mx[idx] = v; }
+                double delta = (double)v - mean[idx];
+                mean[idx] += delta / (double)cnt[idx];
+                m2[idx] += delta * ((double)v - mean[idx]);
             }
+
+            if (i == NSAMPLES - 1)
+                for (int s = 1; s <= n; s++) syst1[s - 1] = rdsystime(s);
 
             /* keep drives disabled and holding (no motion) */
             for (int m = 0; m < n; m++)
@@ -243,18 +259,28 @@ int main(int argc, char *argv[])
             ecx_send_processdata(&ctx);
         }
 
-        printf("\n== System time difference (0x092C) statistics over %d samples ==\n", cnt[0]);
+        printf("\n== System time difference (0x092C) over %lld samples ==\n", cnt[0]);
         printf("  slave |    mean |     std |     min |     max  (ns)\n");
         for (int s = 1; s <= n; s++)
         {
             int idx = s - 1;
             if (cnt[idx] == 0) { printf("  %5d | (no samples)\n", s); continue; }
-            double mean = (double)sum[idx] / cnt[idx];
-            double var  = (double)sumsq[idx] / cnt[idx] - mean * mean;
+            double var = m2[idx] / (double)cnt[idx];
             if (var < 0) var = 0;
-            printf("  %5d | %7.0f | %7.0f | %7d | %7d\n",
-                   s, mean, sqrt(var), mn[idx], mx[idx]);
+            printf("  %5d | %9.0f | %9.0f | %9d | %9d\n",
+                   s, mean[idx], sqrt(var), mn[idx], mx[idx]);
         }
+
+        printf("\n== System-time drift over the %d s window (0x0910, 64-bit) ==\n", NSAMPLES / 1000);
+        for (int s = 1; s <= n; s++)
+        {
+            int idx = s - 1;
+            printf("  slave %d: advanced %lld ns\n",
+                   s, (long long)((int64_t)(syst1[idx] - syst0[idx])));
+        }
+        if (n >= 2)
+            printf("  relative drift (slave2 - slave1) = %lld ns\n",
+                   (long long)((int64_t)(syst1[1] - syst0[1]) - (int64_t)(syst1[0] - syst0[0])));
     }
 
     /* ---- clean shutdown (drive never enabled, so just walk states down) ---- */
