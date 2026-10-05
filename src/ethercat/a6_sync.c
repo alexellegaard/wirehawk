@@ -122,6 +122,12 @@ static uint64_t rdsystime(uint16_t slave)
     return etohll(v);
 }
 
+static void wrreg(uint16_t slave, uint16_t addr, uint32_t v)
+{
+    uint32_t be = htoel(v);
+    ecx_FPWR(&ctx.port, ctx.slavelist[slave].configadr, addr, sizeof(be), &be, EC_TIMEOUTRET);
+}
+
 int main(int argc, char *argv[])
 {
     ec_groupt *grp;
@@ -129,11 +135,17 @@ int main(int argc, char *argv[])
     int wkc = 0;
     int n;
 
-    if (argc != 2)
+    if (argc < 2 || argc > 3)
     {
-        printf("Usage: sudo ./a6_sync <ifname>\n");
+        printf("Usage: sudo ./a6_sync <ifname> [timefilter_ns]\n");
+        printf("  timefilter_ns: optional. If given, writes DC time filter (0x0934)\n");
+        printf("  on BOTH slaves before measuring (default A6 value is 3072 ns).\n");
         return 1;
     }
+    uint32_t timefilter = 0;
+    int have_timefilter = (argc == 3);
+    if (have_timefilter)
+        timefilter = (uint32_t)strtoul(argv[2], NULL, 0);
     signal(SIGINT, sighandler);
 
     /* realtime setup */
@@ -179,6 +191,11 @@ int main(int argc, char *argv[])
         ecx_SDOwrite(&ctx, s, 0x2013, 6,  FALSE, sizeof(sync_mode), &sync_mode, EC_TIMEOUTSAFE);
         ecx_SDOwrite(&ctx, s, 0x2013, 18, FALSE, sizeof(irq_thr),   &irq_thr,   EC_TIMEOUTSAFE);
         ecx_SDOwrite(&ctx, s, 0x2013, 3,  FALSE, sizeof(sync_lost), &sync_lost, EC_TIMEOUTSAFE);
+        if (have_timefilter)
+        {
+            wrreg(s, 0x0934, timefilter);
+            printf("slave %d: DC time filter (0x0934) set to %u ns\n", s, timefilter);
+        }
     }
     ecx_statecheck(&ctx, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
     printf("SAFE_OP reached\n");
