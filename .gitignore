@@ -28,6 +28,7 @@ src/ethercat/a6_filter
 src/ethercat/a6_gain
 src/ethercat/a6_inertia
 src/ethercat/a6_fault
+src/ethercat/a6_profile_test
 # Stray duplicate source
 src/ethercat/a6_csp copy.c
 # Vendor reference (large binary)
