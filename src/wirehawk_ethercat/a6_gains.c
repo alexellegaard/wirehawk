@@ -1,17 +1,15 @@
-/* a6_gains.c — dump + diff the A6-EC tuning & identity objects on BOTH drives.
+/* a6_gains.c — full object-dictionary dump + diff of TWO A6 drives.
  *
  * Usage: sudo ./a6_gains <ifname>
  *
- * Sweeps, side-by-side for drive A (slave 1) and B (slave 2):
- *   identity objects (0x1008 name, 0x1009 hw rev, 0x100A firmware),
- *   0x2000 (C00 basic/inertia/stiffness), 0x2001 (C01 gains),
- *   0x2002 + 0x2003 (advanced: MFC / observers / vibration suppression),
- *   and a set of CiA-402 behaviour objects (mode, positioning option,
- *   interpolation time, polarity, profile accel/decel, motor type),
- *   plus position-scaling / homing objects (0x6063 internal position,
- *   0x607C home offset, 0x6091 gear ratio, 0x6065..0x6068 windows) to hunt
- *   a per-drive zero-offset / following-window difference.
- * Any value that differs between the two drives is flagged " <<<< DIFF".
+ * Reads every vendor object (0x2000..0x2042) and the CiA-402 / identity
+ * objects on both slaves (drive A = slave 1, drive B = slave 2) and flags
+ * any value that differs " <<<< DIFF".
+ *
+ * Sub-index NAMES come from the ESI XML (STEPPERONLINE_A6_Servo_V0.02.xml).
+ * NOTE: the firmware is V512 and the ESI is V0.02, so for 0x2001/0x2002 the
+ * name of a sub-index may be shifted vs the real firmware. The <<<< DIFF flag
+ * is authoritative — trust the flag, not the label.
  *
  * Runs in Safe-OP (motors stay disabled). Safe with motors idle.
  */
@@ -39,38 +37,45 @@ static int rd_str(uint16_t slave, uint16_t idx, uint8_t sub, char* buf, int bufl
     return wkc > 0;
 }
 
-static const char* name2001(uint8_t sub)
-{
-    switch (sub) {
-        case 1:  return "1st pos-loop Kp";
-        case 2:  return "1st spd-loop Kv";
-        case 3:  return "1st spd integral Ti";
-        case 4:  return "1st torque filter";
-        case 9:  return "2nd pos-loop Kp";
-        case 10: return "2nd spd-loop Kv";
-        case 11: return "2nd spd integral Ti";
-        case 12: return "2nd torque filter";
-        case 17: return "spd fbk filter sel";
-        case 18: return "spd fbk LP cutoff";
-        case 19: return "spd fbk moving-avg";
-        default: return "";
-    }
-}
+typedef struct {
+    uint16_t     idx;
+    uint8_t      max_sub;
+    const char*  name;
+    const char*  sub_name[64];
+} ObjDef;
 
-static void dump(uint16_t idx, uint8_t max_sub)
-{
-    for (uint8_t s = 1; s <= max_sub; s++) {
-        uint32_t a = 0, b = 0;
-        int oka = rd32(1, idx, s, &a);
-        int okb = rd32(2, idx, s, &b);
-        char sa[16], sb[16];
-        snprintf(sa, sizeof(sa), oka ? "%u" : "FAIL", a);
-        snprintf(sb, sizeof(sb), okb ? "%u" : "FAIL", b);
-        const char* mark = (oka != okb) || (oka && okb && a != b) ? "  <<<< DIFF" : "";
-        const char* nm = (idx == 0x2001) ? name2001(s) : "";
-        printf("  0x%04X:%02d  %-20s  A=%-10s B=%-10s%s\n", idx, s, nm, sa, sb, mark);
-    }
-}
+static const ObjDef OBJS[] = {
+    { 0x2000, 23, "Configuration Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2001, 59, "Gain Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2002, 47, "Gain auto-tuning mode Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2003, 25, "Command Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2004, 29, "InOutput Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2005, 17, "Shutdown Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2006, 23, "Protection Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2010, 23, "Homing Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2013, 27, "Ethercat Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2020, 14, "Motor Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2021, 16, "Drive Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2031, 14, "Operation reset Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2040, 47, "Operation monitoring Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2041, 17, "Condition monitoring Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+    { 0x2042, 19, "Version Parameter",
+      { "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "Inverter type identification 1", "", "", "", "", "", "", "", "" } },
+};
 
 static void ident(uint16_t idx, const char* label)
 {
@@ -94,7 +99,6 @@ static void cia(uint16_t idx, uint8_t sub, const char* label)
     printf("  0x%04X:%02d  %-22s  A=%-10s B=%-10s%s\n", idx, sub, label, sa, sb, mark);
 }
 
-/* Signed 32-bit variant for DINT objects (home offset, position internal) */
 static void cia_s(uint16_t idx, uint8_t sub, const char* label)
 {
     int32_t a = 0, b = 0;
@@ -105,6 +109,23 @@ static void cia_s(uint16_t idx, uint8_t sub, const char* label)
     snprintf(sb, sizeof(sb), okb ? "%d" : "FAIL", b);
     const char* mark = (oka != okb) || (oka && okb && a != b) ? "  <<<< DIFF" : "";
     printf("  0x%04X:%02d  %-22s  A=%-10s B=%-10s%s\n", idx, sub, label, sa, sb, mark);
+}
+
+static void dumpobj(const ObjDef* d)
+{
+    printf("== 0x%04X (%s) ==\n", d->idx, d->name);
+    for (uint8_t s = 1; s <= d->max_sub; s++) {
+        uint32_t a = 0, b = 0;
+        int oka = rd32(1, d->idx, s, &a);
+        int okb = rd32(2, d->idx, s, &b);
+        if (!oka && !okb) continue;              /* not readable on either -> skip noise */
+        char sa[16], sb[16];
+        snprintf(sa, sizeof(sa), oka ? "%u" : "FAIL", a);
+        snprintf(sb, sizeof(sb), okb ? "%u" : "FAIL", b);
+        const char* mark = (oka != okb) || (oka && okb && a != b) ? "  <<<< DIFF" : "";
+        const char* nm = (s-1 < 64) ? d->sub_name[s-1] : "";
+        printf("  0x%04X:%02d  %-36s  A=%-10s B=%-10s%s\n", d->idx, s, nm, sa, sb, mark);
+    }
 }
 
 int main(int argc, char** argv)
@@ -136,14 +157,8 @@ int main(int argc, char** argv)
     ident(0x1009, "hardware version");
     ident(0x100A, "software/firmware");
 
-    printf("== 0x2000 (C00: basic / inertia / stiffness) ==\n");
-    dump(0x2000, 20);
-    printf("== 0x2001 (C01: gain parameters) ==\n");
-    dump(0x2001, 20);
-    printf("== 0x2002 (C02: advanced tuning) ==\n");
-    dump(0x2002, 16);
-    printf("== 0x2003 (C03: advanced tuning) ==\n");
-    dump(0x2003, 16);
+    for (size_t i = 0; i < sizeof(OBJS)/sizeof(OBJS[0]); i++)
+        dumpobj(&OBJS[i]);
 
     printf("== CiA-402 behaviour ==\n");
     cia(0x6060, 0, "mode of operation");
@@ -156,9 +171,9 @@ int main(int argc, char** argv)
     cia(0x6402, 0, "motor type");
 
     printf("== position scaling / homing (offset candidates) ==\n");
-    cia_s(0x6063, 0, "pos actual internal*");   /* raw encoder, before gear ratio */
-    cia  (0x6064, 0, "pos actual (user)");      /* what the TxPDO reports */
-    cia_s(0x607C, 0, "home offset");            /* shifts zero after homing */
+    cia_s(0x6063, 0, "pos actual internal*");
+    cia  (0x6064, 0, "pos actual (user)");
+    cia_s(0x607C, 0, "home offset");
     cia  (0x6091, 1, "gear ratio: motor rev");
     cia  (0x6091, 2, "gear ratio: shaft rev");
     cia  (0x6065, 0, "following err window");
