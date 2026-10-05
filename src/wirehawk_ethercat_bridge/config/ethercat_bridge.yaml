@@ -9,7 +9,10 @@ ethercat_bridge:
     num_motors: 2                # bench: 2 motors = anchor 0 + anchor 1
     rt_cpu: 3                    # isolated core the RT thread is pinned to
     max_speed: 6553600.0         # counts/s  (50 rev/s = drive rated 3000 rpm; ~3.1 m/s cable at core layer)
-    max_accel: 20000000.0        # counts/s^2 (reaches 50 rev/s in ~0.3 s)
+    max_accel: 2621440.0         # counts/s^2 = 20 rev/s^2 (x131072). Upper bound from the C sweep:
+                                 # 45 rev/s at 20 rev/s^2 was "very slight jump, usable"; 45 gave a
+                                 # metallic bump. 20M (152 rev/s^2) made WASD steps effectively instant
+                                 # accel = the start jump. Reaches 50 rev/s in 2.5 s (gentler ramp).
     counts_offset: [0, 0]           # fixed bias on top of auto-zero (0 = mirror current pose on enable).
                                     # Auto-zero latches raw−logical at each enable, so no absolute
                                     # zero is needed on the bench (motors move between sessions).
