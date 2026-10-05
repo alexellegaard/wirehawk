@@ -21,6 +21,7 @@ struct Config {
     int     rt_cpu         = 3;          // core the RT thread is pinned to
     double  max_speed      = 131072.0;   // counts/s   (trapezoid speed limit)
     double  max_accel      = 1310720.0;  // counts/s^2 (trapezoid accel limit)
+    double  pos_feedback_gain = 20.0;    // 1/s: position drift correction on top of velocity feedforward
     std::array<int64_t, MAX_MOTORS> counts_offset{};  // per-motor: added to commanded target (spool-zero -> drive-zero calibration)
 };
 
@@ -31,6 +32,7 @@ struct Config {
 struct BridgeData {
     // command: ROS2 -> RT
     std::array<int32_t, MAX_MOTORS> target_position{};
+    std::array<double, MAX_MOTORS> target_velocity{};  // counts/s, computed at cmd rate (feedforward)
     std::atomic<bool> target_valid{false};   // a command has been received at least once
 
     // feedback: RT -> ROS2

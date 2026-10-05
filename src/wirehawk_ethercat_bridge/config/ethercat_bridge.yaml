@@ -13,6 +13,10 @@ ethercat_bridge:
                                  # 45 rev/s at 20 rev/s^2 was "very slight jump, usable"; 45 gave a
                                  # metallic bump. 20M (152 rev/s^2) made WASD steps effectively instant
                                  # accel = the start jump. Reaches 50 rev/s in 2.5 s (gentler ramp).
+    pos_feedback_gain: 20.0      # 1/s: position drift correction on top of the interpolator's velocity
+                                 # feedforward. Feedforward = d(cmd)/dt at the 100 Hz command rate; this
+                                 # small term closes residual position drift without the sawtooth the old
+                                 # v=err/dt form produced on a staircase target.
     counts_offset: [0, 0]           # fixed bias on top of auto-zero (0 = mirror current pose on enable).
                                     # Auto-zero latches raw−logical at each enable, so no absolute
                                     # zero is needed on the bench (motors move between sessions).

@@ -29,6 +29,7 @@ int main(int argc, char** argv)
     node->declare_parameter("rt_cpu",        cfg.rt_cpu);
     node->declare_parameter("max_speed",     cfg.max_speed);
     node->declare_parameter("max_accel",     cfg.max_accel);
+    node->declare_parameter("pos_feedback_gain", cfg.pos_feedback_gain);
     node->declare_parameter("counts_offset", std::vector<int64_t>{});
 
     cfg.interface      = node->get_parameter("interface").as_string();
@@ -38,6 +39,7 @@ int main(int argc, char** argv)
     cfg.rt_cpu         = node->get_parameter("rt_cpu").as_int();
     cfg.max_speed      = node->get_parameter("max_speed").as_double();
     cfg.max_accel      = node->get_parameter("max_accel").as_double();
+    cfg.pos_feedback_gain = node->get_parameter("pos_feedback_gain").as_double();
     {
         auto co = node->get_parameter("counts_offset").as_integer_array();
         for (size_t i = 0; i < co.size() && i < cfg.counts_offset.size(); i++)
@@ -55,11 +57,26 @@ int main(int argc, char** argv)
     auto cmd_sub = node->create_subscription<wirehawk_msgs::msg::MotorCommand>(
         "cmd/motors", 10,
         [&data, &cfg](wirehawk_msgs::msg::MotorCommand::SharedPtr msg) {
+            // Feedforward velocity: d(position)/dt at the command rate, so the
+            // RT interpolator can track the command's MOTION instead of deriving
+            // it from the position gap (which caused a 100 Hz sawtooth).
+            static auto last_t = std::chrono::steady_clock::now();
+            static std::array<int32_t, wirehawk_bridge::MAX_MOTORS> last_pos{};
+            static bool has_last = false;
+            auto now = std::chrono::steady_clock::now();
+            double dt = std::chrono::duration<double>(now - last_t).count();
+
             std::lock_guard<std::mutex> lk(data.mtx);
             int n = std::min<int>(msg->position.size(), cfg.num_motors);
-            for (int i = 0; i < n; i++)
-                data.target_position[i] =
-                    (int32_t)((int64_t)msg->position[i] + cfg.counts_offset[i]);
+            for (int i = 0; i < n; i++) {
+                int32_t p = (int32_t)((int64_t)msg->position[i] + cfg.counts_offset[i]);
+                if (has_last && dt > 1e-6)
+                    data.target_velocity[i] = (double)(p - last_pos[i]) / dt;
+                last_pos[i] = p;
+                data.target_position[i] = p;
+            }
+            has_last = true;
+            last_t = now;
             data.target_valid = true;
         });
 

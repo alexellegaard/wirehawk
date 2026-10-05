@@ -97,17 +97,18 @@ struct MotionState {
     double  vel = 0.0;  // current velocity (counts/s)
 };
 
-// Advance the interpolated command one cycle toward `target`, bounded by
-// max_speed and max_accel (a trapezoidal velocity profile). This is the hard
-// safety envelope: whatever the command stream does, the motor cannot move
-// faster than max_speed or harder than max_accel.
-static void step_trapezoid(MotionState& m, int32_t target,
-                           double max_speed, double max_accel, double dt)
+// Advance the interpolated command one cycle toward `target` at the command's
+// own velocity (feedforward), bounded by max_speed and max_accel. A small
+// position term (kp*err) corrects drift. The previous form derived velocity from
+// the position gap (v = err/dt), which decays to zero as the gap closes — on a
+// staircase (100 Hz) target that produced a sawtooth "speed up / slow down".
+static void step_trapezoid(MotionState& m, int32_t target, double target_vel,
+                           double max_speed, double max_accel, double kp, double dt)
 {
     double err = (double)target - (double)m.cmd;
 
-    // desired velocity to close the gap in one step, clamped to the speed limit
-    double v = err / dt;
+    // feedforward velocity + drift correction, clamped to the speed limit
+    double v = target_vel + kp * err;
     if (v >  max_speed) v =  max_speed;
     if (v < -max_speed) v = -max_speed;
 
@@ -270,12 +271,15 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
         if (wkc > 0)
             ec_sync(g_ctx.DCtime, g_cfg.cycle_ns, &toff);
 
-        // read the commanded target (latest value, brief lock)
+        // read the commanded target + feedforward velocity (latest value, brief lock)
         int32_t target[MAX_MOTORS];
+        double  target_vel[MAX_MOTORS];
         {
             std::lock_guard<std::mutex> lk(data->mtx);
-            for (int i = 0; i < N; i++)
-                target[i] = data->target_position[i];
+            for (int i = 0; i < N; i++) {
+                target[i]     = data->target_position[i];
+                target_vel[i] = data->target_velocity[i];
+            }
         }
 
         bool all_enabled = true;
@@ -313,7 +317,9 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                     }
                     tgt = (int32_t)((int64_t)target[i] + zero_offset[i]);
                 }
-                step_trapezoid(motion[i], tgt, g_cfg.max_speed, g_cfg.max_accel, dt);
+                step_trapezoid(motion[i], tgt, target_vel[i],
+                               g_cfg.max_speed, g_cfg.max_accel,
+                               g_cfg.pos_feedback_gain, dt);
                 rx[i]->target_position = motion[i].cmd;
                 rx[i]->control_word = 0x000F;
             } else {
