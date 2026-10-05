@@ -153,7 +153,7 @@ static int do_read(const char *ifname)
     return 0;
 }
 
-static int do_set(const char *ifname, uint16_t ratio)
+static int do_write(const char *ifname, uint16_t idx, uint8_t sub, const char *name, uint16_t value)
 {
     printf("Init on %s ...\n", ifname);
     if (!ecx_init(&ctx, ifname)) { printf("no socket\n"); return 1; }
@@ -164,20 +164,25 @@ static int do_set(const char *ifname, uint16_t ratio)
     ecx_statecheck(&ctx, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
     printf("SAFE_OP reached\n\n");
 
-    printf("Writing load inertia ratio C00.06 = %u %% to BOTH slaves ...\n", ratio);
+    printf("Writing %s = %u to BOTH slaves ...\n", name, value);
     for (int s = 1; s <= 2; s++)
     {
         uint16_t before = 0, after = 0;
-        rd16(s, 0x2000, 7, &before);
-        int ok = wr16(s, 0x2000, 7, ratio);
-        rd16(s, 0x2000, 7, &after);
-        printf("  slave %d: before=%u%% write=%s after=%u%%\n", s, before, ok ? "OK" : "FAIL", after);
+        rd16(s, idx, sub, &before);
+        int ok = wr16(s, idx, sub, value);
+        rd16(s, idx, sub, &after);
+        printf("  slave %d: before=%u write=%s after=%u\n", s, before, ok ? "OK" : "FAIL", after);
     }
-    printf("\nNOTE: in Standard mode (C00.04=1) the drive re-computes Kp/Kv from this\n"
-           "ratio; no hand gain tuning needed. Read back with: sudo ./a6_inertia %s\n", ifname);
 
     ecx_close(&ctx);
     return 0;
+}
+
+/* stiffness level (C00.05) is the gain-aggressiveness knob in Standard auto-tune
+ * mode — lower it to soften the gains and damp free-shaft vibration. */
+static int do_stiff(const char *ifname, uint16_t level)
+{
+    return do_write(ifname, 0x2000, 6, "stiffness level C00.05", level);
 }
 
 /* ---- tune mode: OP + enable + trigger F30.10 + wait + readback + disable ---- */
@@ -302,15 +307,18 @@ int main(int argc, char *argv[])
     if (argc < 2)
     {
         printf("Usage:\n");
-        printf("  sudo ./a6_inertia <ifname>              read params\n");
-        printf("  sudo ./a6_inertia <ifname> set <ratio>  set load inertia ratio %% (0..12000)\n");
-        printf("  sudo ./a6_inertia <ifname> tune         offline inertia auto-tune (moves the motor)\n");
+        printf("  sudo ./a6_inertia <ifname>                read params\n");
+        printf("  sudo ./a6_inertia <ifname> set <ratio>    set load inertia ratio %% (0..12000)\n");
+        printf("  sudo ./a6_inertia <ifname> stiff <level>  set stiffness level (1..31, def 12)\n");
+        printf("  sudo ./a6_inertia <ifname> tune           offline inertia auto-tune (moves the motor)\n");
         return 1;
     }
     if (argc == 2)
         return do_read(argv[1]);
     if (argc == 4 && strcmp(argv[2], "set") == 0)
-        return do_set(argv[1], (uint16_t)strtoul(argv[3], NULL, 0));
+        return do_write(argv[1], 0x2000, 7, "load inertia ratio C00.06", (uint16_t)strtoul(argv[3], NULL, 0));
+    if (argc == 4 && strcmp(argv[2], "stiff") == 0)
+        return do_stiff(argv[1], (uint16_t)strtoul(argv[3], NULL, 0));
     if (argc == 3 && strcmp(argv[2], "tune") == 0)
         return do_tune(argv[1]);
     printf("bad arguments\n");
