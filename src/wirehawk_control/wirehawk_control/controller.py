@@ -21,7 +21,7 @@ from .kinematics import CDPRKinematics
 
 class CDPRController:
     def __init__(self, anchors, start_pos, ws_min, ws_max, max_speed, max_accel,
-                 EA, mass, fk_gain, max_cable_speed, spec: WinchSpec):
+                 EA, mass, fk_gain, max_cable_speed, max_cable_accel, spec: WinchSpec):
         self.kinematics = CDPRKinematics(np.asarray(anchors, dtype=float))
         self.start_pos = np.asarray(start_pos, dtype=float)
         self.ws_min = np.asarray(ws_min, dtype=float)
@@ -32,6 +32,7 @@ class CDPRController:
         self.mass = float(mass)
         self.fk_gain = float(fk_gain)
         self.max_cable_speed = float(max_cable_speed)
+        self.max_cable_accel = float(max_cable_accel)
         self.spec = spec
 
         self.target_pos = np.clip(self.start_pos, self.ws_min, self.ws_max)
@@ -42,6 +43,8 @@ class CDPRController:
         self.L_m = self.kinematics.compute_commanded_lengths(self.target_pos)
         self.L_integral = np.zeros(self.kinematics.num_cables, dtype=float)
         self.command_counts = lengths_to_counts(self.L_m, self.spec)
+        self.command_vel = np.zeros(self.kinematics.num_cables, dtype=float)
+        self.command_was_clamped = np.zeros(self.kinematics.num_cables, dtype=bool)
 
     def set_target_velocity(self, v) -> None:
         """Task-space velocity command (from /cmd_vel)."""
@@ -95,8 +98,13 @@ class CDPRController:
         # 6. Integral length feedback (compensates stretch / steady-state error).
         u = self.kinematics.anchor_unit_vectors(self.P_est)
         proj = u @ e
-        self.L_integral -= self.fk_gain * proj * dt
-        self.L_integral = np.clip(self.L_integral, -5.0, 5.0)
+        # Anti-windup: if a motor's command was rate-limited (slew-rate clamp
+        # binding) last step, its position error is a transient the drive is
+        # still catching up on — hold the integral instead of accumulating it,
+        # otherwise it winds up and overshoots. The ±0.5 m bound is a safety
+        # clamp; the real cable-stretch correction is ~0.006 m.
+        self.L_integral -= np.where(self.command_was_clamped, 0.0, self.fk_gain * proj * dt)
+        self.L_integral = np.clip(self.L_integral, -0.5, 0.5)
 
         # 7. Commanded lengths = geometric IK + accumulated correction.
         L_ff = self.kinematics.compute_commanded_lengths(self.target_pos)
@@ -107,9 +115,12 @@ class CDPRController:
         #    EtherCAT bridge enforces the same limit (max_speed), so sim and
         #    real stay identical.
         new_counts = lengths_to_counts(L_d, self.spec)
-        max_delta = int(round(self.max_cable_speed * dt))
-        delta = np.clip(new_counts - self.command_counts, -max_delta, max_delta)
-        self.command_counts = self.command_counts + delta
+        desired_vel = (new_counts - self.command_counts) / dt
+        max_dv = self.max_cable_accel * dt
+        self.command_was_clamped = np.abs(desired_vel - self.command_vel) > max_dv
+        self.command_vel += np.clip(desired_vel - self.command_vel, -max_dv, max_dv)
+        self.command_vel = np.clip(self.command_vel, -self.max_cable_speed, self.max_cable_speed)
+        self.command_counts = self.command_counts + np.rint(self.command_vel * dt).astype(np.int64)
         return self.command_counts
 
     def snapshot(self) -> dict:
