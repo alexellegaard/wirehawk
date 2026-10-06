@@ -67,13 +67,16 @@ class CDPRController:
             self.filtered_vel = self.target_vel.copy()
 
         # 2. Integrate velocity -> target position with a soft workspace
-        #    boundary: cap each axis's velocity so the TCP can decelerate to a
-        #    stop before the edge (decel-limited approach) instead of hard-
-        #    clipping the position into an instant stop the winches can't follow.
-        vmax_upper = np.sqrt(2.0 * self.max_accel * np.maximum(self.ws_max - self.target_pos, 0.0))
-        vmax_lower = np.sqrt(2.0 * self.max_accel * np.maximum(self.target_pos - self.ws_min, 0.0))
-        vmax = np.minimum(vmax_upper, vmax_lower)
-        vel = np.clip(self.filtered_vel, -vmax, vmax)
+        #    boundary: brake each axis only as it approaches an edge, using the
+        #    constant-acceleration stopping distance v <= sqrt(2*a*d). The clamp
+        #    is ONE-SIDED per axis: moving away from a boundary is never limited
+        #    (a symmetric clip would pin the TCP at the edge and trap it).
+        d_upper = np.maximum(self.ws_max - self.target_pos, 0.0)
+        d_lower = np.maximum(self.target_pos - self.ws_min, 0.0)
+        vmax_upper = np.sqrt(2.0 * self.max_accel * d_upper)   # max speed toward ws_max
+        vmax_lower = np.sqrt(2.0 * self.max_accel * d_lower)   # max speed toward ws_min
+        vel = np.minimum(self.filtered_vel, vmax_upper)        # brake the +axis approach
+        vel = np.maximum(vel, -vmax_lower)                     # brake the -axis approach
         self.target_pos += vel * dt
         self.target_pos = np.clip(self.target_pos, self.ws_min, self.ws_max)
 
