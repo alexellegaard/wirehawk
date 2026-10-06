@@ -17,10 +17,10 @@ def generate_launch_description():
 
     # Which state/motors the controller loop closes on:
     #   sim  -> /sim/state/motors  (sim bridge echo)
-    #   real -> /state/motors      (real EtherCAT bridge actual feedback)
+    #   real -> /real/state/motors (real EtherCAT bridge actual feedback)
     # The logger records BOTH regardless of this choice.
     state_topic = PythonExpression([
-        "'/sim/state/motors' if '", backend, "' == 'sim' else '/state/motors'"
+        "'/sim/state/motors' if '", backend, "' == 'sim' else '/real/state/motors'"
     ])
 
     sim_launch = IncludeLaunchDescription(

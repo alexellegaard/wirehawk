@@ -3,7 +3,7 @@
 
   cmd   <- cmd/motors        : the controller's commanded counts (one version)
   sim   <- sim/state/motors  : the sim bridge's feedback (perfect-tracking echo)
-  real  <- state/motors      : the real EtherCAT bridge's ACTUAL drive feedback
+  real  <- real/state/motors : the real EtherCAT bridge's ACTUAL drive feedback
 
 Each row: t, pos0, pos1, ...  (seconds + encoder counts per motor).
 Output: <output_dir>/cmd_<stamp>.csv, sim_<stamp>.csv, real_<stamp>.csv.
@@ -29,7 +29,7 @@ class MotorLogger(Node):
         self.declare_parameter('flush_period_s', 1.0)
         self.declare_parameter('cmd_topic', '/cmd/motors')
         self.declare_parameter('sim_state_topic', '/sim/state/motors')
-        self.declare_parameter('real_state_topic', '/state/motors')
+        self.declare_parameter('real_state_topic', '/real/state/motors')
 
         out = self.get_parameter('output_dir').value
         os.makedirs(out, exist_ok=True)
