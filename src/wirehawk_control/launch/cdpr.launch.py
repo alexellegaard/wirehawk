@@ -30,6 +30,15 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Always-on logger: records cmd/motors + state/motors to timestamped CSVs
+    # so every run is captured without any manual echo/pipe steps.
+    motor_logger = Node(
+        package='wirehawk_control',
+        executable='motor_logger',
+        name='motor_logger',
+        output='screen'
+    )
+
     # Sim bridge: stands in for the EtherCAT bridge. Consumes cdpr_node's
     # cmd/motors (counts), drives the Gazebo cable lengths, and returns
     # state/motors (counts) so the controller loop closes on the sim backend.
@@ -54,5 +63,6 @@ def generate_launch_description():
                               description='World variant: 20x20_3m, 20x20_5m, 40x40_3m, 70x70_3m, 70x70_5m'),
         sim_launch,
         cdpr_node,
+        motor_logger,
         sim_bridge
     ])

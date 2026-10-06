@@ -26,6 +26,7 @@ setup(
             'cdpr_node = wirehawk_control.cdpr_node:main',
             'keyboard_teleop = wirehawk_control.keyboard_teleop:main',
             'trajectory_planner = wirehawk_control.trajectory_planner:main',
+            'motor_logger = wirehawk_control.motor_logger:main',
         ],
     },
 )
