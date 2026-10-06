@@ -332,7 +332,12 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
         {
             std::lock_guard<std::mutex> lk(data->mtx);
             for (int i = 0; i < N; i++) {
-                data->actual_position[i] = tx[i]->position_actual;
+                // Publish the LOGICAL position (command frame): undo the auto-zero
+                // latch and the fixed counts_offset so state/motors is directly
+                // comparable to cmd/motors (what the controller's FK expects).
+                data->actual_position[i] = (int32_t)((int64_t)tx[i]->position_actual
+                                                     - zero_offset[i]
+                                                     - g_cfg.counts_offset[i]);
                 data->actual_torque[i]   = tx[i]->torque_actual;
                 data->status_word[i]     = tx[i]->status_word;
                 data->error_code[i]      = tx[i]->error_code;
