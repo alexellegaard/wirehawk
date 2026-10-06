@@ -107,8 +107,17 @@ static void step_trapezoid(MotionState& m, int32_t target, double target_vel,
 {
     double err = (double)target - (double)m.cmd;
 
-    // feedforward velocity + drift correction, clamped to the speed limit
-    double v = target_vel + kp * err;
+    // Feedforward velocity + drift correction, with a soft-landing cap on the
+    // catch-up term: never chase the target faster than sqrt(2*a*|err|), the
+    // fastest speed that can still brake to a stop within the remaining gap.
+    // Without this cap, kp*err races the interpolator (at kp=20) into a
+    // ~60 rev overshoot limit cycle because it can only brake at max_accel.
+    double catchup = kp * err;
+    double catchup_max = std::sqrt(2.0 * max_accel * std::fabs(err));
+    if (catchup >  catchup_max) catchup =  catchup_max;
+    if (catchup < -catchup_max) catchup = -catchup_max;
+
+    double v = target_vel + catchup;
     if (v >  max_speed) v =  max_speed;
     if (v < -max_speed) v = -max_speed;
 
