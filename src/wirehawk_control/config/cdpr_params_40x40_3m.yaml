@@ -26,5 +26,5 @@ trajectory_planner:
 keyboard_teleop:
   ros__parameters:
     max_linear_speed: 5.0     # m/s cap (matches the '5' key)
-    max_linear_accel: 2.0     # m/s^2 ramp rate (~18 rev/s^2 at the motor — Alex's bench ceiling)
+    max_linear_accel: 4.0     # m/s^2 ramp rate (~20 rev/s^2 at the motor — Alex's bench ceiling)
     rate_hz: 30.0

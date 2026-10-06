@@ -7,7 +7,7 @@ cdpr_node:
     workspace_min: [-25.0, -25.0, 0.3]
     workspace_max: [25.0, 25.0, 4.7]
     max_linear_speed: 1.0
-    max_linear_accel: 2.0     # TCP accel clamp (~18 rev/s^2 at the motor — bench ceiling)
+    max_linear_accel: 4.0     # TCP accel clamp (~20 rev/s^2 at the motor — bench ceiling)
     rate_hz: 50.0
     cmd_timeout: 0.2
     # Elastic-FK feedback (calibration copies matching the world SDF cable/payload params)
@@ -26,5 +26,5 @@ trajectory_planner:
 keyboard_teleop:
   ros__parameters:
     max_linear_speed: 5.0     # m/s cap (matches the '5' key)
-    max_linear_accel: 2.0     # m/s^2 ramp rate (~18 rev/s^2 at the motor — Alex's bench ceiling)
+    max_linear_accel: 4.0     # m/s^2 ramp rate (~20 rev/s^2 at the motor — Alex's bench ceiling)
     rate_hz: 30.0
