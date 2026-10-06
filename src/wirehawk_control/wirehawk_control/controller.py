@@ -21,7 +21,7 @@ from .kinematics import CDPRKinematics
 
 class CDPRController:
     def __init__(self, anchors, start_pos, ws_min, ws_max, max_speed, max_accel,
-                 EA, mass, fk_gain, spec: WinchSpec):
+                 EA, mass, fk_gain, max_cable_speed, spec: WinchSpec):
         self.kinematics = CDPRKinematics(np.asarray(anchors, dtype=float))
         self.start_pos = np.asarray(start_pos, dtype=float)
         self.ws_min = np.asarray(ws_min, dtype=float)
@@ -31,6 +31,7 @@ class CDPRController:
         self.EA = float(EA)
         self.mass = float(mass)
         self.fk_gain = float(fk_gain)
+        self.max_cable_speed = float(max_cable_speed)
         self.spec = spec
 
         self.target_pos = np.clip(self.start_pos, self.ws_min, self.ws_max)
@@ -65,8 +66,15 @@ class CDPRController:
         else:
             self.filtered_vel = self.target_vel.copy()
 
-        # 2. Integrate velocity -> target position (clamped to workspace).
-        self.target_pos += self.filtered_vel * dt
+        # 2. Integrate velocity -> target position with a soft workspace
+        #    boundary: cap each axis's velocity so the TCP can decelerate to a
+        #    stop before the edge (decel-limited approach) instead of hard-
+        #    clipping the position into an instant stop the winches can't follow.
+        vmax_upper = np.sqrt(2.0 * self.max_accel * np.maximum(self.ws_max - self.target_pos, 0.0))
+        vmax_lower = np.sqrt(2.0 * self.max_accel * np.maximum(self.target_pos - self.ws_min, 0.0))
+        vmax = np.minimum(vmax_upper, vmax_lower)
+        vel = np.clip(self.filtered_vel, -vmax, vmax)
+        self.target_pos += vel * dt
         self.target_pos = np.clip(self.target_pos, self.ws_min, self.ws_max)
 
         # 3. Measured cable lengths from encoder counts (the only feedback).
@@ -91,8 +99,14 @@ class CDPRController:
         L_ff = self.kinematics.compute_commanded_lengths(self.target_pos)
         L_d = np.clip(L_ff + self.L_integral, 0.1, self.spec.total_m)
 
-        # 8. Commanded encoder counts (the backend-agnostic output).
-        self.command_counts = lengths_to_counts(L_d, self.spec)
+        # 8. Commanded encoder counts, with a per-motor cable-speed clamp so the
+        #    commanded drum rate never exceeds the drive's rated speed. The real
+        #    EtherCAT bridge enforces the same limit (max_speed), so sim and
+        #    real stay identical.
+        new_counts = lengths_to_counts(L_d, self.spec)
+        max_delta = int(round(self.max_cable_speed * dt))
+        delta = np.clip(new_counts - self.command_counts, -max_delta, max_delta)
+        self.command_counts = self.command_counts + delta
         return self.command_counts
 
     def snapshot(self) -> dict:
