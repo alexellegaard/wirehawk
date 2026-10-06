@@ -27,6 +27,7 @@ def generate_launch_description():
         executable='cdpr_node',
         name='cdpr_node',
         parameters=[params_file],
+        remappings=[('state/motors', '/sim/state/motors')],
         output='screen'
     )
 
@@ -46,6 +47,7 @@ def generate_launch_description():
         package='wirehawk_gazebo_bridge',
         executable='sim_bridge',
         name='sim_bridge',
+        remappings=[('state/motors', '/sim/state/motors')],
         output='screen'
     )
 
