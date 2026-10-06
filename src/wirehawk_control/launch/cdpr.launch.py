@@ -3,7 +3,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 def generate_launch_description():
@@ -11,8 +11,17 @@ def generate_launch_description():
     control_pkg = get_package_share_directory('wirehawk_control')
 
     world = LaunchConfiguration('world')
+    backend = LaunchConfiguration('backend')
     # cdpr_params_<world>.yaml, calibrated to the matching world's anchor layout
     params_file = [control_pkg, '/config/cdpr_params_', world, '.yaml']
+
+    # Which state/motors the controller loop closes on:
+    #   sim  -> /sim/state/motors  (sim bridge echo)
+    #   real -> /state/motors      (real EtherCAT bridge actual feedback)
+    # The logger records BOTH regardless of this choice.
+    state_topic = PythonExpression([
+        "'/sim/state/motors' if '", backend, "' == 'sim' else '/state/motors'"
+    ])
 
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -27,12 +36,12 @@ def generate_launch_description():
         executable='cdpr_node',
         name='cdpr_node',
         parameters=[params_file],
-        remappings=[('state/motors', '/sim/state/motors')],
+        remappings=[('state/motors', state_topic)],
         output='screen'
     )
 
-    # Always-on logger: records cmd/motors + state/motors to timestamped CSVs
-    # so every run is captured without any manual echo/pipe steps.
+    # Always-on logger: records cmd/motors + sim + real motor state to
+    # timestamped CSVs so every run is captured without manual steps.
     motor_logger = Node(
         package='wirehawk_control',
         executable='motor_logger',
@@ -63,6 +72,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value='20x20_3m',
                               description='World variant: 20x20_3m, 20x20_5m, 40x40_3m, 70x70_3m, 70x70_5m'),
+        DeclareLaunchArgument('backend', default_value='sim',
+                              description="Controller feedback source: 'sim' (sim bridge) or 'real' (EtherCAT bridge)"),
         sim_launch,
         cdpr_node,
         motor_logger,
