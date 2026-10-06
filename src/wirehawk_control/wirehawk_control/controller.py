@@ -21,7 +21,7 @@ from .kinematics import CDPRKinematics
 
 class CDPRController:
     def __init__(self, anchors, start_pos, ws_min, ws_max, max_speed, max_accel,
-                 EA, mass, fk_gain, max_cable_speed, max_cable_accel, spec: WinchSpec):
+                 EA, mass, fk_gain, max_cable_speed, spec: WinchSpec):
         self.kinematics = CDPRKinematics(np.asarray(anchors, dtype=float))
         self.start_pos = np.asarray(start_pos, dtype=float)
         self.ws_min = np.asarray(ws_min, dtype=float)
@@ -32,7 +32,6 @@ class CDPRController:
         self.mass = float(mass)
         self.fk_gain = float(fk_gain)
         self.max_cable_speed = float(max_cable_speed)
-        self.max_cable_accel = float(max_cable_accel)
         self.spec = spec
 
         self.target_pos = np.clip(self.start_pos, self.ws_min, self.ws_max)
@@ -43,7 +42,6 @@ class CDPRController:
         self.L_m = self.kinematics.compute_commanded_lengths(self.target_pos)
         self.L_integral = np.zeros(self.kinematics.num_cables, dtype=float)
         self.command_counts = lengths_to_counts(self.L_m, self.spec)
-        self.command_vel = np.zeros(self.kinematics.num_cables, dtype=float)
 
     def set_target_velocity(self, v) -> None:
         """Task-space velocity command (from /cmd_vel)."""
@@ -104,19 +102,14 @@ class CDPRController:
         L_ff = self.kinematics.compute_commanded_lengths(self.target_pos)
         L_d = np.clip(L_ff + self.L_integral, 0.1, self.spec.total_m)
 
-        # 8. Commanded encoder counts through a per-motor slew-rate limiter
-        #    (speed AND acceleration), so the commanded drum rate — and its rate
-        #    of change — never exceed the drive's capability. The EtherCAT bridge
-        #    enforces the same limits (max_speed / max_accel), so sim and real
-        #    stay identical. The accel term is what kills the overshoot: without
-        #    it the command freezes instantly and the accel-limited drive
-        #    overshoots by v^2/(2a).
+        # 8. Commanded encoder counts, with a per-motor cable-speed clamp so the
+        #    commanded drum rate never exceeds the drive's rated speed. The real
+        #    EtherCAT bridge enforces the same limit (max_speed), so sim and
+        #    real stay identical.
         new_counts = lengths_to_counts(L_d, self.spec)
-        desired_vel = (new_counts - self.command_counts) / dt   # velocity to reach target in one step
-        max_dv = self.max_cable_accel * dt
-        self.command_vel += np.clip(desired_vel - self.command_vel, -max_dv, max_dv)
-        self.command_vel = np.clip(self.command_vel, -self.max_cable_speed, self.max_cable_speed)
-        self.command_counts = self.command_counts + np.rint(self.command_vel * dt).astype(np.int64)
+        max_delta = int(round(self.max_cable_speed * dt))
+        delta = np.clip(new_counts - self.command_counts, -max_delta, max_delta)
+        self.command_counts = self.command_counts + delta
         return self.command_counts
 
     def snapshot(self) -> dict:

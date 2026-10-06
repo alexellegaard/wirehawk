@@ -10,8 +10,6 @@ cdpr_node:
     max_linear_accel: 3.0
     max_cable_speed: 6553600.0   # counts/s = 50 rev/s (drive rated 3000 rpm); per-motor drum
                                  # rate clamp — MUST match the EtherCAT bridge's max_speed.
-    max_cable_accel: 2621440.0   # counts/s^2 = 20 rev/s^2; per-motor drum accel clamp — MUST
-                                 # match the EtherCAT bridge's max_accel.
     rate_hz: 50.0
     cmd_timeout: 0.2
     # Elastic-FK feedback (calibration copies matching the world SDF cable/payload params)
