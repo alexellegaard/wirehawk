@@ -193,9 +193,54 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &next);
     next.tv_nsec = ((next.tv_nsec / 1000000) + 1) * 1000000;
 
+    /* Enable phase: bring EVERY drive to "operation enabled" while pinning its
+     * target to the live actual. The motion clock does NOT start until all
+     * drives are enabled — otherwise the first drive to enable joins the
+     * velocity profile mid-ramp and starts earlier than the rest (and they
+     * finish at different points). */
+    printf("Enabling %d motor(s)...\n", n);
+    int all_enabled = 0;
+    {
+        int enable_watchdog = 0;
+        while (running && !all_enabled && enable_watchdog < 5000)
+        {
+            next.tv_nsec += CYCLE_NS + toff;
+            if (next.tv_nsec >= 1000000000) { next.tv_nsec -= 1000000000; next.tv_sec++; }
+            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+
+            wkc = ecx_receive_processdata(&ctx, EC_TIMEOUTRET);
+            if (wkc > 0) ec_sync(ctx.DCtime, CYCLE_NS, &toff);
+
+            all_enabled = 1;
+            for (int m = 0; m < n; m++)
+            {
+                uint16_t sw = tx[m]->status_word, state = sw & 0x006F;
+                if (sw & 0x0008)
+                {
+                    rx[m]->control_word = 0x0080;   /* hold fault reset steady */
+                    enabled[m] = 0;
+                    all_enabled = 0;
+                    continue;
+                }
+                rx[m]->target_position = tx[m]->position_actual;   /* pin: no jump on enable */
+                if ((sw & 0x004F) == 0x0040)      rx[m]->control_word = 0x0006;
+                else if (state == 0x0021)         rx[m]->control_word = 0x0007;
+                else if (state == 0x0023)         rx[m]->control_word = 0x000F;
+                else if (state == 0x0027) { enabled[m] = 1; cmd_pos[m] = tx[m]->position_actual; prev_pos[m] = tx[m]->position_actual; rx[m]->control_word = 0x000F; }
+                if (!enabled[m]) all_enabled = 0;
+            }
+            ecx_send_processdata(&ctx);
+            enable_watchdog++;
+        }
+        if (!all_enabled)
+            printf("enable timeout — some drive never reached operation enabled\n");
+        else
+            printf("all %d motor(s) enabled — starting synchronized move\n", n);
+    }
+
     long i = 0;
-    printf("Beginning trapezoidal move...\n");
-    while (running && i < total)
+    if (all_enabled)
+        while (running && i < total)
     {
         next.tv_nsec += CYCLE_NS + toff;
         if (next.tv_nsec >= 1000000000) { next.tv_nsec -= 1000000000; next.tv_sec++; }
