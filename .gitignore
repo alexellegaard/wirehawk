@@ -19,6 +19,7 @@ __pycache__/
 src/ethercat/*
 !src/ethercat/*.c
 !src/ethercat/*.xml
+!src/ethercat/*.md
 !src/ethercat/Makefile
 # Vendor reference (large binary)
 A6-EC_series_servo_drive_manual.pdf
