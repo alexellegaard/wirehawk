@@ -39,13 +39,15 @@ integer multiple of 250 µs and ≥ ~1.25× the command period (~100 Hz control)
 
 | Tool | What it does |
 |------|--------------|
-| `a6_gains`   | Full vendor OD dump (0x2000–0x2042), flags DIFFs between the two slaves |
-| `a6_sync`    | DC clock diagnostic: 64-bit 0x0910 cycle jitter (both slaves), optional 0x0934 sweep |
+| `a6_gains`   | Full vendor OD dump (0x2000–0x2042), flags DIFFs across all slaves |
+| `a6_sync`    | DC clock diagnostic: 64-bit 0x0910 cycle jitter (per slave vs slave 1), optional 0x0934 sweep |
 | `a6_filter`  | Read/set speed-feedback filter (0x2001:17/18/19) |
 | `a6_gain`    | Read/set position/speed loop gains (0x2001:01/02) |
 | `a6_inertia` | Read/set load-inertia ratio (C00.06) + stiffness level (C00.05); `tune` triggers the offline inertia auto-tune |
 | `a6_fault`   | Read 0x203F drive fault + 0x603F CiA error + 0x6041 status |
 | `a6_set_profile` | Read/set profile accel/decel (0x6083/0x6084 — PP mode only, red herring in CSP) |
-| `a6_step_test` / `a6_two_motors` | Gentle ramped bench-motion scripts |
+| `a6_step_test` | Ramp-and-hold settle test (peak ferr + settle time per motor) |
+| `a6_profile_test` | Trapezoidal speed/accel sweep (coast velocity chatter + dwell ferr) |
+| `a6_reset`   | Fault reset (0x6040=0x80) on all slaves |
 
 All SDO tools run in Safe-OP (motors disabled); they never enable the drives.

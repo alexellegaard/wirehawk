@@ -222,7 +222,7 @@ static int do_tune(const char *ifname)
     }
     printf("mapped O=%d I=%d bytes\n", grp->Obytes, grp->Ibytes);
 
-    /* Safe-OP manufacturer params (same as a6_two_motors) */
+    /* Safe-OP manufacturer params (same as the other bench scripts) */
     for (int s = 1; s <= n; s++)
     {
         uint16_t sync_mode = 2, irq_thr = 10, sync_lost = 20;

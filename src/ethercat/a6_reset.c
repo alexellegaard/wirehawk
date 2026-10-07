@@ -8,7 +8,7 @@
  * ALL slaves found on the bus (up to MAX_MOTORS).
  *
  * Uses the A6-EC predefined PDO mapping (0x1701 / 0x1B01) from
- * STEPPERONLINE_A6_Servo_V0.02.xml. Same DC ordering as a6_two_motors.c: the
+ * STEPPERONLINE_A6_Servo_V0.02.xml. Same DC ordering as a6_step_test.c: the
  * SM-sync objects (0x1C32/0x1C33) are PreOP-only, so they are written in the
  * Pre-OP -> Safe-OP transition hook and DC SYNC0 is armed there too.
  */
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     }
     printf("mapped O=%d I=%d bytes\n", grp->Obytes, grp->Ibytes);
 
-    /* Safe-OP manufacturer sync params (same as a6_two_motors) */
+    /* Safe-OP manufacturer sync params (same as a6_step_test) */
     for (int s = 1; s <= n; s++)
     {
         uint16_t v = 2;  ecx_SDOwrite(&ctx, s, 0x2013, 6,  FALSE, sizeof(v), &v, EC_TIMEOUTSAFE);
