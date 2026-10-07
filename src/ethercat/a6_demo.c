@@ -1,4 +1,4 @@
-/* a6_demo.c — motor identification + synchronized sine-wave demo.
+/* a6_demo.c — motor identification + synchronized rotation demo.
  *
  * Usage: sudo ./a6_demo <ifname>
  *
@@ -9,8 +9,8 @@
  *             map which physical motor is which slave (handy when the cables
  *             are tangled).
  *
- *   Phase 2 — synchronized wave: a smooth phase-offset sine across all motors
- *             (a travelling wave), +/- 0.5 rev at 0.5 Hz, 1 s cosine ramp-in.
+ *   Phase 2 — synchronized rotation: all motors do the same smooth sine in
+ *             phase, so they rotate together (+/- 0.5 rev, 0.5 Hz, 1 s ramp-in).
  *
  * Both phases use a sync barrier first (wait until EVERY drive is "operation
  * enabled") so the motion starts for all motors on the same cycle. Runs until
@@ -40,9 +40,9 @@
 #define RAMP_IN_S     1.0        /* cosine ramp-in over 1 s */
 
 /* identification phase timing (per motor) */
-#define IDENT_MS      1000       /* ramp 1 rev over 1 s */
-#define IDENT_HOLD    800        /* hold at +1 rev */
-#define IDENT_PAUSE   400        /* pause before the next motor */
+#define IDENT_MS      600        /* ramp 1 rev over 0.6 s */
+#define IDENT_HOLD    150        /* brief hold at +1 rev (minimal cw<->ccw gap) */
+#define IDENT_PAUSE   300        /* pause before the next motor */
 
 /* ---- A6-EC predefined PDO layout (0x1701 / 0x1B01) ---- */
 typedef struct __attribute__((packed))
@@ -184,7 +184,6 @@ int main(int argc, char *argv[])
 
     int     enabled[MAX_MOTORS] = {0};
     int32_t start_pos[MAX_MOTORS] = {0};
-    double  phase[MAX_MOTORS];
     int64 toff = 0;
     struct timespec next;
     clock_gettime(CLOCK_MONOTONIC, &next);
@@ -255,15 +254,12 @@ int main(int argc, char *argv[])
         printf("identification done\n");
     }
 
-    /* ---- Phase 2: synchronized travelling wave (quarter-cycle per motor) ---- */
+    /* ---- Phase 2: synchronized rotation (all motors in phase) ---- */
     if (all_enabled && running)
     {
         for (int m = 0; m < n; m++)
-        {
             start_pos[m] = tx[m]->position_actual;
-            phase[m] = m * (M_PI / 2.0);
-        }
-        printf("running synchronized wave (Ctrl-C to stop)\n");
+        printf("running synchronized rotation (Ctrl-C to stop)\n");
 
         long t = 0;
         while (running)
@@ -281,7 +277,7 @@ int main(int argc, char *argv[])
             for (int m = 0; m < n; m++)
             {
                 if (!drive_ready(m, &enabled[m], &start_pos[m])) continue;
-                rx[m]->target_position = start_pos[m] + (int32_t)(amp * sin(2.0 * M_PI * DEMO_FREQ_HZ * sec - phase[m]));
+                rx[m]->target_position = start_pos[m] + (int32_t)(amp * sin(2.0 * M_PI * DEMO_FREQ_HZ * sec));
                 rx[m]->control_word = 0x000F;
             }
             ecx_send_processdata(&ctx);

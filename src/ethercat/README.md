@@ -26,7 +26,7 @@ make clean        # remove all binaries
 |---|---|
 | `a6_step_test` | ramp-and-hold (±1 rev), reports peak following-error + settle time per motor |
 | `a6_profile_test` | trapezoid speed/accel sweep: coast velocity chatter + dwell following error |
-| `a6_demo` | identify each motor (1 rev each, motor 1→4), then a synchronized sine wave |
+| `a6_demo` | identify each motor (1 rev each, motor 1→4), then synchronized rotation |
 | `a6_gains` | full vendor OD dump (0x2000–0x2042 + CiA/identity), flags DIFFs across slaves |
 | `a6_sync` | DC clock diagnostic: cycle jitter per slave + drift vs slave 1 |
 | `a6_fault` | read 0x203F (drive fault) + 0x603F (CiA error) + 0x6041 (status) |
@@ -39,7 +39,7 @@ make clean        # remove all binaries
 **No extra args** (just the interface):
 ```bash
 sudo ./a6_step_test eth0     # ramp-and-hold, settle per motor
-sudo ./a6_demo eth0          # identify each motor (1 rev), then synchronized wave (Ctrl-C to stop)
+sudo ./a6_demo eth0          # identify each motor (1 rev), then synchronized rotation (Ctrl-C to stop)
 sudo ./a6_gains eth0         # dump + diff every vendor object
 sudo ./a6_fault eth0         # read fault/error/status
 sudo ./a6_reset eth0         # clear a fault on all slaves
