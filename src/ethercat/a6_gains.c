@@ -19,6 +19,8 @@
 #include <stdint.h>
 
 static ecx_contextt ctx;
+#define MAX_SLAVES 8
+static int nslaves;
 
 static int rd32(uint16_t slave, uint16_t idx, uint8_t sub, uint32_t* v)
 {
@@ -78,52 +80,81 @@ static const ObjDef OBJS[] = {
 
 static void ident(uint16_t idx, const char* label)
 {
-    char a[64], b[64];
-    int oka = rd_str(1, idx, 0, a, sizeof(a));
-    int okb = rd_str(2, idx, 0, b, sizeof(b));
-    const char* mark = (oka != okb) || (oka && okb && strcmp(a, b) != 0) ? "  <<<< DIFF" : "";
-    printf("  0x%04X  %-22s  A=%-24s B=%-24s%s\n", idx, label,
-           oka ? a : "FAIL", okb ? b : "FAIL", mark);
+    char buf[MAX_SLAVES][64];
+    int ok[MAX_SLAVES];
+    int all_ok = 1;
+    for (int s = 0; s < nslaves; s++) {
+        ok[s] = rd_str(s + 1, idx, 0, buf[s], sizeof(buf[s]));
+        if (!ok[s]) all_ok = 0;
+    }
+    int differs = !all_ok;
+    if (all_ok)
+        for (int s = 1; s < nslaves; s++)
+            if (strcmp(buf[0], buf[s]) != 0) { differs = 1; break; }
+    printf("  0x%04X  %-22s", idx, label);
+    for (int s = 0; s < nslaves; s++)
+        printf("  S%d=%-20s", s + 1, ok[s] ? buf[s] : "FAIL");
+    printf("%s\n", differs ? "  <<<< DIFF" : "");
 }
 
 static void cia(uint16_t idx, uint8_t sub, const char* label)
 {
-    uint32_t a = 0, b = 0;
-    int oka = rd32(1, idx, sub, &a);
-    int okb = rd32(2, idx, sub, &b);
-    char sa[16], sb[16];
-    snprintf(sa, sizeof(sa), oka ? "%u" : "FAIL", a);
-    snprintf(sb, sizeof(sb), okb ? "%u" : "FAIL", b);
-    const char* mark = (oka != okb) || (oka && okb && a != b) ? "  <<<< DIFF" : "";
-    printf("  0x%04X:%02d  %-22s  A=%-10s B=%-10s%s\n", idx, sub, label, sa, sb, mark);
+    uint32_t v[MAX_SLAVES];
+    int ok[MAX_SLAVES];
+    int all_ok = 1;
+    for (int s = 0; s < nslaves; s++) { ok[s] = rd32(s + 1, idx, sub, &v[s]); if (!ok[s]) all_ok = 0; }
+    int differs = !all_ok;
+    if (all_ok) for (int s = 1; s < nslaves; s++) if (v[s] != v[0]) { differs = 1; break; }
+    printf("  0x%04X:%02d  %-22s", idx, sub, label);
+    for (int s = 0; s < nslaves; s++) {
+        char b[16];
+        snprintf(b, sizeof(b), ok[s] ? "%u" : "FAIL", v[s]);
+        printf("  S%d=%-10s", s + 1, b);
+    }
+    printf("%s\n", differs ? "  <<<< DIFF" : "");
 }
 
 static void cia_s(uint16_t idx, uint8_t sub, const char* label)
 {
-    int32_t a = 0, b = 0;
-    int oka = rd32(1, idx, sub, (uint32_t*)&a);
-    int okb = rd32(2, idx, sub, (uint32_t*)&b);
-    char sa[16], sb[16];
-    snprintf(sa, sizeof(sa), oka ? "%d" : "FAIL", a);
-    snprintf(sb, sizeof(sb), okb ? "%d" : "FAIL", b);
-    const char* mark = (oka != okb) || (oka && okb && a != b) ? "  <<<< DIFF" : "";
-    printf("  0x%04X:%02d  %-22s  A=%-10s B=%-10s%s\n", idx, sub, label, sa, sb, mark);
+    int32_t v[MAX_SLAVES];
+    int ok[MAX_SLAVES];
+    int all_ok = 1;
+    for (int s = 0; s < nslaves; s++) { ok[s] = rd32(s + 1, idx, sub, (uint32_t*)&v[s]); if (!ok[s]) all_ok = 0; }
+    int differs = !all_ok;
+    if (all_ok) for (int s = 1; s < nslaves; s++) if (v[s] != v[0]) { differs = 1; break; }
+    printf("  0x%04X:%02d  %-22s", idx, sub, label);
+    for (int s = 0; s < nslaves; s++) {
+        char b[16];
+        snprintf(b, sizeof(b), ok[s] ? "%d" : "FAIL", v[s]);
+        printf("  S%d=%-10s", s + 1, b);
+    }
+    printf("%s\n", differs ? "  <<<< DIFF" : "");
 }
 
 static void dumpobj(const ObjDef* d)
 {
     printf("== 0x%04X (%s) ==\n", d->idx, d->name);
     for (uint8_t s = 1; s <= d->max_sub; s++) {
-        uint32_t a = 0, b = 0;
-        int oka = rd32(1, d->idx, s, &a);
-        int okb = rd32(2, d->idx, s, &b);
-        if (!oka && !okb) continue;
-        char sa[16], sb[16];
-        snprintf(sa, sizeof(sa), oka ? "%u" : "FAIL", a);
-        snprintf(sb, sizeof(sb), okb ? "%u" : "FAIL", b);
-        const char* mark = (oka != okb) || (oka && okb && a != b) ? "  <<<< DIFF" : "";
+        uint32_t v[MAX_SLAVES];
+        int ok[MAX_SLAVES];
+        int any_ok = 0;
+        for (int m = 0; m < nslaves; m++) {
+            ok[m] = rd32(m + 1, d->idx, s, &v[m]);
+            if (ok[m]) any_ok = 1;
+        }
+        if (!any_ok) continue;
+        int differs = 0;
+        for (int m = 0; m < nslaves; m++) {
+            if (!ok[m] || v[m] != v[0]) { differs = 1; break; }
+        }
         const char* nm = (s-1 < 64) ? d->sub_name[s-1] : "";
-        printf("  0x%04X:%02d  %-36s  A=%-10s B=%-10s%s\n", d->idx, s, nm, sa, sb, mark);
+        printf("  0x%04X:%02d  %-36s", d->idx, s, nm);
+        for (int m = 0; m < nslaves; m++) {
+            char b[16];
+            snprintf(b, sizeof(b), ok[m] ? "%u" : "FAIL", v[m]);
+            printf("  S%d=%-10s", m + 1, b);
+        }
+        printf("%s\n", differs ? "  <<<< DIFF" : "");
     }
 }
 
@@ -138,8 +169,9 @@ int main(int argc, char** argv)
     if (!ecx_init(&ctx, argv[1])) { printf("no socket\n"); return 1; }
     if (ecx_config_init(&ctx) <= 0) { printf("no slaves\n"); ecx_close(&ctx); return 1; }
     printf("%d slave(s)\n", ctx.slavecount);
-    if (ctx.slavecount < 2) {
-        printf("need 2 slaves (found %d)\n", ctx.slavecount);
+    nslaves = (ctx.slavecount > MAX_SLAVES) ? MAX_SLAVES : ctx.slavecount;
+    if (nslaves < 1) {
+        printf("no slaves\n");
         ecx_close(&ctx);
         return 1;
     }

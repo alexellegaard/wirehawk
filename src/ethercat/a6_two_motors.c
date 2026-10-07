@@ -39,12 +39,12 @@
 #define CYCLE_NS      1000000L  /* 1 ms cycle */
 #define ENCODER_RES   131072L   /* 17-bit encoder: 131072 counts/rev */
 #define RT_CPU        3         /* core the loop is pinned to; pair with isolcpus=3 */
-#define MAX_MOTORS    2
+#define MAX_MOTORS    4
 #define CSP_AMP       32768.0   /* +/- 0.25 rev */
 
 /* one frequency per axis (Hz) — deliberately different so independent
  * control is obvious on the bench. Keep them low for a first run. */
-static const double CSP_FREQ[MAX_MOTORS] = { 0.25, 0.40 };
+static const double CSP_FREQ[MAX_MOTORS] = { 0.25, 0.40, 0.55, 0.70 };
 
 /* ---- A6-EC predefined PDO layout (0x1701 / 0x1B01) ---- */
 typedef struct __attribute__((packed))
@@ -178,8 +178,8 @@ int main(int argc, char *argv[])
         printf("found %d slaves, capping to %d\n", n, MAX_MOTORS);
         n = MAX_MOTORS;
     }
-    if (n < 2)
-        printf("WARNING: only %d slave(s) found — is the second drive powered and daisy-chained?\n", n);
+    if (n < 4)
+        printf("WARNING: only %d slave(s) found (expected 4) — are all drives powered and daisy-chained?\n", n);
 
     for (int s = 1; s <= n; s++)
         printf("  slave %d: name='%s' configadr=0x%04X\n", s, ctx.slavelist[s].name, ctx.slavelist[s].configadr);

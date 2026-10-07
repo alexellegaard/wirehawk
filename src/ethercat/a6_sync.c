@@ -33,7 +33,7 @@
 
 #define CYCLE_NS   1000000L   /* 1 ms cycle */
 #define RT_CPU     3          /* pair with isolcpus=3 */
-#define MAX_MOTORS 2
+#define MAX_MOTORS 4
 #define NSAMPLES   5000       /* 5 s at 1 kHz */
 
 /* ---- A6-EC predefined PDO layout (0x1701 / 0x1B01) — needed to map IO ---- */
@@ -234,10 +234,10 @@ int main(int argc, char *argv[])
         double dmean[MAX_MOTORS] = {0}, dm2[MAX_MOTORS] = {0};
         int64_t dmin[MAX_MOTORS], dmax[MAX_MOTORS];
         long long dcnt[MAX_MOTORS] = {0};
-        /* slave2 - slave1 difference stats */
-        double xmean = 0, xm2 = 0;
-        int64_t xmin = 0, xmax = 0;
-        long long xcnt = 0;
+        /* slave(s) vs slave 1 (the DC reference) difference stats */
+        double xmean[MAX_MOTORS] = {0}, xm2[MAX_MOTORS] = {0};
+        int64_t xmin[MAX_MOTORS], xmax[MAX_MOTORS];
+        long long xcnt[MAX_MOTORS] = {0};
         uint64_t prev[MAX_MOTORS] = {0};
         int have_prev = 0;
         struct timespec next;
@@ -272,16 +272,17 @@ int main(int argc, char *argv[])
                     dmean[idx] += dd / (double)dcnt[idx];
                     dm2[idx] += dd * (dv - dmean[idx]);
                 }
-                if (n >= 2)
+                for (int s = 2; s <= n; s++)
                 {
-                    int64_t diff = (int64_t)(now[1] - now[0]);
-                    xcnt++;
-                    if (xcnt == 1) { xmin = xmax = diff; }
-                    else { if (diff < xmin) xmin = diff; if (diff > xmax) xmax = diff; }
+                    int idx = s - 1;
+                    int64_t diff = (int64_t)(now[idx] - now[0]);
+                    xcnt[idx]++;
+                    if (xcnt[idx] == 1) { xmin[idx] = xmax[idx] = diff; }
+                    else { if (diff < xmin[idx]) xmin[idx] = diff; if (diff > xmax[idx]) xmax[idx] = diff; }
                     double dv = (double)diff;
-                    double dd = dv - xmean;
-                    xmean += dd / (double)xcnt;
-                    xm2 += dd * (dv - xmean);
+                    double dd = dv - xmean[idx];
+                    xmean[idx] += dd / (double)xcnt[idx];
+                    xm2[idx] += dd * (dv - xmean[idx]);
                 }
             }
             have_prev = 1;
@@ -308,13 +309,15 @@ int main(int argc, char *argv[])
                    s, dmean[idx], sqrt(var), (long long)dmin[idx], (long long)dmax[idx]);
         }
 
-        if (n >= 2)
+        printf("\n== system-time difference vs slave 1 (DC reference) ==\n");
+        for (int s = 2; s <= n; s++)
         {
-            double var = xm2 / (double)xcnt;
+            int idx = s - 1;
+            if (xcnt[idx] == 0) { printf("  slave %d: (no samples)\n", s); continue; }
+            double var = xm2[idx] / (double)xcnt[idx];
             if (var < 0) var = 0;
-            printf("\n== slave2 - slave1 system-time difference ==\n");
-            printf("  mean=%9.0f  std=%9.0f  min=%9lld  max=%9lld  (ns)\n",
-                   xmean, sqrt(var), (long long)xmin, (long long)xmax);
+            printf("  slave %d - slave 1: mean=%9.0f  std=%9.0f  min=%9lld  max=%9lld  (ns)\n",
+                   s, xmean[idx], sqrt(var), (long long)xmin[idx], (long long)xmax[idx]);
         }
     }
 

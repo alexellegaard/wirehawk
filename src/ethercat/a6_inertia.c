@@ -40,7 +40,7 @@
 #include <sys/mman.h>
 
 #define CYCLE_NS      1000000L
-#define MAX_MOTORS    2
+#define MAX_MOTORS    4
 
 /* ---- A6-EC predefined PDO layout (0x1701 / 0x1B01) ---- */
 typedef struct __attribute__((packed))
@@ -118,12 +118,16 @@ static void ec_sync(int64 reftime, int64 cycletime, int64 *offsettime)
 }
 
 /* ---- Safe-OP modes: read / set (no motion) ---- */
-static void print_param(const char *name, uint16_t idx, uint8_t sub, int s1, int s2)
+static void print_param(const char *name, uint16_t idx, uint8_t sub)
 {
-    uint16_t a = 0, b = 0;
-    rd16(s1, idx, sub, &a);
-    if (s2) rd16(s2, idx, sub, &b);
-    printf("  %-32s slave1=%u  slave2=%u\n", name, a, b);
+    printf("  %-32s", name);
+    for (int s = 1; s <= ctx.slavecount; s++)
+    {
+        uint16_t v = 0;
+        rd16(s, idx, sub, &v);
+        printf("  S%d=%u", s, v);
+    }
+    printf("\n");
 }
 
 static int do_read(const char *ifname)
@@ -138,16 +142,16 @@ static int do_read(const char *ifname)
     printf("SAFE_OP reached\n\n");
 
     printf("== gain auto-tuning (C00 group) ==\n");
-    print_param("Auto-tuning mode (C00.04)", 0x2000, 5, 1, 2);
-    print_param("Stiffness level (C00.05)",   0x2000, 6, 1, 2);
-    print_param("Load inertia ratio % (C00.06)", 0x2000, 7, 1, 2);
+    print_param("Auto-tuning mode (C00.04)", 0x2000, 5);
+    print_param("Stiffness level (C00.05)",   0x2000, 6);
+    print_param("Load inertia ratio % (C00.06)", 0x2000, 7);
 
     printf("\n== offline inertia auto-tune config (C07 group) ==\n");
-    print_param("Auto-tune mode (C07.00)",      0x2007, 1, 1, 2);
-    print_param("Auto-tune speed rpm (C07.01)", 0x2007, 2, 1, 2);
-    print_param("Auto-tune accel ms (C07.02)",  0x2007, 3, 1, 2);
-    print_param("Auto-tune torque 0.1%% (C07.03)", 0x2007, 4, 1, 2);
-    print_param("Auto-tune revs 0.01r (C07.04)", 0x2007, 5, 1, 2);
+    print_param("Auto-tune mode (C07.00)",      0x2007, 1);
+    print_param("Auto-tune speed rpm (C07.01)", 0x2007, 2);
+    print_param("Auto-tune accel ms (C07.02)",  0x2007, 3);
+    print_param("Auto-tune torque 0.1%% (C07.03)", 0x2007, 4);
+    print_param("Auto-tune revs 0.01r (C07.04)", 0x2007, 5);
 
     ecx_close(&ctx);
     return 0;
@@ -164,8 +168,8 @@ static int do_write(const char *ifname, uint16_t idx, uint8_t sub, const char *n
     ecx_statecheck(&ctx, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
     printf("SAFE_OP reached\n\n");
 
-    printf("Writing %s = %u to BOTH slaves ...\n", name, value);
-    for (int s = 1; s <= 2; s++)
+    printf("Writing %s = %u to ALL slaves ...\n", name, value);
+    for (int s = 1; s <= ctx.slavecount; s++)
     {
         uint16_t before = 0, after = 0;
         rd16(s, idx, sub, &before);
@@ -239,11 +243,11 @@ static int do_tune(const char *ifname)
     printf("OPERATIONAL reached\n");
 
     /* read the current inertia ratio BEFORE tuning */
-    uint16_t pre[MAX_MOTORS] = {0, 0};
+    uint16_t pre[MAX_MOTORS] = {0};
     for (int m = 0; m < n; m++) rd16(m + 1, 0x2000, 7, &pre[m]);
 
     /* enable servos, then trigger F30.10 = 1 once each */
-    int     triggered[MAX_MOTORS] = {0, 0};
+    int     triggered[MAX_MOTORS] = {0};
     int64   toff = 0;
     struct timespec next;
     clock_gettime(CLOCK_MONOTONIC, &next);
@@ -272,8 +276,12 @@ static int do_tune(const char *ifname)
         }
         ecx_send_processdata(&ctx);
 
-        if (i % 1000 == 999 && triggered[0] && triggered[1])
-            printf("  ... auto-tune in progress (t=%ds)\n", (i + 1) / 1000);
+        if (i % 1000 == 999)
+        {
+            int all_trig = 1;
+            for (int m = 0; m < n; m++) if (!triggered[m]) all_trig = 0;
+            if (all_trig) printf("  ... auto-tune in progress (t=%ds)\n", (i + 1) / 1000);
+        }
     }
 
     /* read back the result */

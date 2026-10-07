@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     if (!ecx_init(&ctx, argv[1])) { printf("no socket\n"); return 1; }
     if (ecx_config_init(&ctx) <= 0) { printf("no slaves\n"); ecx_close(&ctx); return 1; }
     printf("%d slave(s)\n", ctx.slavecount);
-    if (ctx.slavecount < 2) { printf("need 2 slaves\n"); ecx_close(&ctx); return 1; }
+    if (ctx.slavecount < 1) { printf("no slaves\n"); ecx_close(&ctx); return 1; }
 
     {
         uint8_t io_map[4096] = {0};
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
     printf("SAFE_OP reached\n");
 
     printf("\n== 1st gain set (0x2001:01 Kp / :02 Kv) ==\n");
-    for (int s = 1; s <= 2; s++)
+    for (int s = 1; s <= ctx.slavecount; s++)
     {
         uint16_t kp = 0, kv = 0;
         rd16(s, 0x2001, 1, &kp);
@@ -67,8 +67,8 @@ int main(int argc, char** argv)
     {
         uint16_t kp = (uint16_t)strtoul(argv[2], NULL, 0);
         uint16_t kv = (uint16_t)strtoul(argv[3], NULL, 0);
-        printf("\nWriting Kp=%u Kv=%u to BOTH slaves ...\n", kp, kv);
-        for (int s = 1; s <= 2; s++)
+        printf("\nWriting Kp=%u Kv=%u to ALL slaves ...\n", kp, kv);
+        for (int s = 1; s <= ctx.slavecount; s++)
         {
             int oka = wr16(s, 0x2001, 1, kp);
             int okb = wr16(s, 0x2001, 2, kv);

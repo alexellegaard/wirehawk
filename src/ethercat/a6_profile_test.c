@@ -32,7 +32,7 @@
 #define CYCLE_NS      4000000L   /* 4 ms = 250 Hz, matches the ROS bridge */
 #define ENCODER_RES   131072L    /* 17-bit encoder, counts/rev */
 #define RT_CPU        3
-#define MAX_MOTORS    2
+#define MAX_MOTORS    4
 #define HALF_WRAP     0x00800000 /* guard: half of +/-160 rev wrap */
 
 typedef struct __attribute__((packed))
@@ -181,12 +181,12 @@ int main(int argc, char *argv[])
     printf("OPERATIONAL reached\n");
     exchange();
 
-    int     enabled[MAX_MOTORS] = {0, 0};
+    int     enabled[MAX_MOTORS] = {0};
     int64_t cmd_pos[MAX_MOTORS];       /* running commanded position */
     int32_t prev_pos[MAX_MOTORS];
     VStat   vst[MAX_MOTORS] = { {0} };
-    int64_t max_ferr[MAX_MOTORS] = {0, 0};
-    int32_t last_vel[MAX_MOTORS] = {0, 0};
+    int64_t max_ferr[MAX_MOTORS] = {0};
+    int32_t last_vel[MAX_MOTORS] = {0};
 
     int64 toff = 0;
     struct timespec next;
@@ -256,9 +256,9 @@ int main(int argc, char *argv[])
 
         if (i >= ramp_cycles && i < ramp_cycles + coast_cycles && (i % 50) == 0)
         {
-            printf("  coast +%ld ms: M0 vel=%+8d ferr=%+7d", (i - ramp_cycles) * 4,
-                   last_vel[0], tx[0]->following_error);
-            if (n >= 2) printf("   M1 vel=%+8d ferr=%+7d", last_vel[1], tx[1]->following_error);
+            printf("  coast +%ld ms:", (i - ramp_cycles) * 4);
+            for (int m = 0; m < n; m++)
+                printf("  M%d vel=%+8d ferr=%+7d", m, last_vel[m], tx[m]->following_error);
             printf("\n");
         }
 

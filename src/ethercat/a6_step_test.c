@@ -27,7 +27,7 @@
 #define CYCLE_NS      1000000L
 #define ENCODER_RES   131072L
 #define RT_CPU        3
-#define MAX_MOTORS    2
+#define MAX_MOTORS    4
 #define STEP_COUNTS   131072L   /* 1 rev */
 #define SETTLE_THRESH 200       /* counts: |ferr| below this = settled */
 
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
     printf("OPERATIONAL reached\n");
     exchange();
 
-    int     enabled[MAX_MOTORS] = {0, 0};
+    int     enabled[MAX_MOTORS] = {0};
     int32_t cmd_pos[MAX_MOTORS];   /* commanded position at segment start */
 
     int64 toff = 0;
@@ -223,8 +223,9 @@ int main(int argc, char *argv[])
                 if (af >= SETTLE_THRESH) last_big[m] = dc;
             }
             if (dc % 200 == 0) {
-                printf("  +%4dms: M0 ferr=%+7d", dc, tx[0]->following_error);
-                if (n >= 2) printf("   M1 ferr=%+7d", tx[1]->following_error);
+                printf("  +%4dms:", dc);
+                for (int m = 0; m < n; m++)
+                    printf("  M%d ferr=%+7d", m, tx[m]->following_error);
                 printf("\n");
             }
         }
@@ -233,8 +234,9 @@ int main(int argc, char *argv[])
 
         seg_cycle++;
         if (seg_cycle >= mv + SEGS[seg].dwell_ms) {
-            printf("  => M0 max_ferr=%-6lld settle=%-4dms", (long long)max_ferr[0], last_big[0]);
-            if (n >= 2) printf(" | M1 max_ferr=%-6lld settle=%-4dms", (long long)max_ferr[1], last_big[1]);
+            printf("  =>");
+            for (int m = 0; m < n; m++)
+                printf("  M%d max_ferr=%-6lld settle=%-4dms", m, (long long)max_ferr[m], last_big[m]);
             printf("\n");
             for (int m = 0; m < n; m++) cmd_pos[m] += SEGS[seg].target;
             seg++;

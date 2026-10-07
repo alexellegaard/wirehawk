@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
     printf("== fault / status ==\n");
     printf("  slave | 0x203F (drive fault) | 0x603F (CiA error) | 0x6041 (status)\n");
-    for (int s = 1; s <= 2; s++)
+    for (int s = 1; s <= ctx.slavecount; s++)
     {
         uint16_t f = 0, e = 0, st = 0;
         rd16(s, 0x203F, 0, &f);

@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     if (!ecx_init(&ctx, argv[1])) { printf("no socket\n"); return 1; }
     if (ecx_config_init(&ctx) <= 0) { printf("no slaves\n"); ecx_close(&ctx); return 1; }
     printf("%d slave(s)\n", ctx.slavecount);
-    if (ctx.slavecount < 2) { printf("need 2 slaves\n"); ecx_close(&ctx); return 1; }
+    if (ctx.slavecount < 1) { printf("no slaves\n"); ecx_close(&ctx); return 1; }
 
     {
         uint8_t io_map[4096] = {0};
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
     printf("SAFE_OP reached\n");
 
     printf("\n== speed feedback filter (0x2001:17 sel / :18 cutoff / :19 avg) ==\n");
-    for (int s = 1; s <= 2; s++)
+    for (int s = 1; s <= ctx.slavecount; s++)
     {
         uint16_t sel = 0, cutoff = 0, avg = 0;
         rd16(s, 0x2001, 17, &sel);
@@ -72,8 +72,8 @@ int main(int argc, char** argv)
     {
         uint16_t sel = (uint16_t)strtoul(argv[2], NULL, 0);
         uint16_t avg = (uint16_t)strtoul(argv[3], NULL, 0);
-        printf("\nWriting sel=%u avg=%u to BOTH slaves ...\n", sel, avg);
-        for (int s = 1; s <= 2; s++)
+        printf("\nWriting sel=%u avg=%u to ALL slaves ...\n", sel, avg);
+        for (int s = 1; s <= ctx.slavecount; s++)
         {
             int oka = wr16(s, 0x2001, 17, sel);
             int okb = wr16(s, 0x2001, 19, avg);
