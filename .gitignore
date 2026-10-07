@@ -14,22 +14,11 @@ __pycache__/
 *~
 # OS artifacts
 .DS_Store
-# Compiled SOEM bench binaries (built by src/ethercat/Makefile)
-src/ethercat/a6_csp_rt
-src/ethercat/a6_pp
-src/ethercat/a6_pp_rt
-src/ethercat/a6_reset
-src/ethercat/a6_two_motors
-src/ethercat/a6_gains
-src/ethercat/a6_set_profile
-src/ethercat/a6_step_test
-src/ethercat/a6_sync
-src/ethercat/a6_filter
-src/ethercat/a6_gain
-src/ethercat/a6_inertia
-src/ethercat/a6_fault
-src/ethercat/a6_profile_test
-# Stray duplicate source
-src/ethercat/a6_csp copy.c
+# Compiled SOEM bench binaries (no extension) + stray files in src/ethercat.
+# Keep the sources (.c/.xml) and the Makefile; ignore everything else.
+src/ethercat/*
+!src/ethercat/*.c
+!src/ethercat/*.xml
+!src/ethercat/Makefile
 # Vendor reference (large binary)
 A6-EC_series_servo_drive_manual.pdf
