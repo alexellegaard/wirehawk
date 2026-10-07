@@ -1,14 +1,20 @@
-/* a6_demo.c — synchronized sine-wave demo across all 4 motors.
+/* a6_demo.c — motor identification + synchronized sine-wave demo.
  *
  * Usage: sudo ./a6_demo <ifname>
  *
- * Enables every drive (sync barrier: waits until ALL are "operation
- * enabled"), then streams a smooth phase-offset sine to each motor — a
- * travelling wave down the bench. Amplitude +/- 0.5 rev, 0.5 Hz, with a 1 s
- * cosine ramp-in so nothing jumps. Runs until Ctrl-C. FREE SHAFTS, no load.
+ * Two phases, both on free shafts (no load):
  *
- * Same DC ordering as a6_step_test: SM-sync (0x1C32/0x1C33) written in the
- * Pre-OP -> Safe-OP hook, DC SYNC0 armed there too.
+ *   Phase 1 — identify: each motor does one revolution (out and back) in
+ *             order, motor 1 -> 4, while the others hold still. Use this to
+ *             map which physical motor is which slave (handy when the cables
+ *             are tangled).
+ *
+ *   Phase 2 — synchronized wave: a smooth phase-offset sine across all motors
+ *             (a travelling wave), +/- 0.5 rev at 0.5 Hz, 1 s cosine ramp-in.
+ *
+ * Both phases use a sync barrier first (wait until EVERY drive is "operation
+ * enabled") so the motion starts for all motors on the same cycle. Runs until
+ * Ctrl-C. Same DC ordering as a6_step_test.
  */
 #define _GNU_SOURCE
 
@@ -24,12 +30,19 @@
 #include <math.h>
 
 #define CYCLE_NS      4000000L   /* 4 ms = 250 Hz, matches the bridge */
+#define CYCLE_MS      (CYCLE_NS / 1000000L)   /* 4 ms/cycle */
 #define ENCODER_RES   131072L
 #define RT_CPU        3
 #define MAX_MOTORS    4
-#define DEMO_AMP      65536.0    /* +/- 0.5 rev */
+
+#define DEMO_AMP      65536.0    /* +/- 0.5 rev (wave phase) */
 #define DEMO_FREQ_HZ  0.5
 #define RAMP_IN_S     1.0        /* cosine ramp-in over 1 s */
+
+/* identification phase timing (per motor) */
+#define IDENT_MS      1000       /* ramp 1 rev over 1 s */
+#define IDENT_HOLD    800        /* hold at +1 rev */
+#define IDENT_PAUSE   400        /* pause before the next motor */
 
 /* ---- A6-EC predefined PDO layout (0x1701 / 0x1B01) ---- */
 typedef struct __attribute__((packed))
@@ -93,6 +106,32 @@ static void ec_sync(int64 reftime, int64 cycletime, int64 *offsettime)
     *offsettime = (int64)((-delta * pgain) + (integral * igain));
 }
 
+/* Per-cycle drive status handling. Returns 1 if the drive is enabled and ready
+ * for a motion target (caller then sets target + cw=0x000F); otherwise writes
+ * the enable/fault handshake with the target pinned to actual and returns 0.
+ * start_pos is (re)latched to the live actual on the cycle the drive enables. */
+static int drive_ready(int m, int *enabled, int32_t *start_pos)
+{
+    uint16_t sw = tx[m]->status_word, state = sw & 0x006F;
+    if (sw & 0x0008)
+    {
+        rx[m]->control_word = 0x0080;          /* hold fault reset steady */
+        *enabled = 0;
+        rx[m]->target_position = tx[m]->position_actual;
+        return 0;
+    }
+    if (!*enabled)
+    {
+        rx[m]->target_position = tx[m]->position_actual;   /* pin: no jump on enable */
+        if ((sw & 0x004F) == 0x0040)      rx[m]->control_word = 0x0006;
+        else if (state == 0x0021)         rx[m]->control_word = 0x0007;
+        else if (state == 0x0023)         rx[m]->control_word = 0x000F;
+        else if (state == 0x0027)         { *enabled = 1; *start_pos = tx[m]->position_actual; rx[m]->control_word = 0x000F; }
+        return 0;
+    }
+    return 1;
+}
+
 int main(int argc, char *argv[])
 {
     ec_groupt *grp;
@@ -151,8 +190,7 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &next);
     next.tv_nsec = ((next.tv_nsec / 1000000) + 1) * 1000000;
 
-    /* Enable barrier: wait until ALL drives are operation-enabled so the wave
-     * starts for every motor on the same cycle (no stagger). */
+    /* ---- enable barrier: wait until ALL drives are operation-enabled ---- */
     printf("Enabling %d motor(s)...\n", n);
     int all_enabled = 0;
     {
@@ -168,13 +206,11 @@ int main(int argc, char *argv[])
             all_enabled = 1;
             for (int m = 0; m < n; m++)
             {
-                uint16_t sw = tx[m]->status_word, state = sw & 0x006F;
-                if (sw & 0x0008) { rx[m]->control_word = 0x0080; enabled[m] = 0; all_enabled = 0; continue; }
-                rx[m]->target_position = tx[m]->position_actual;
-                if ((sw & 0x004F) == 0x0040)      rx[m]->control_word = 0x0006;
-                else if (state == 0x0021)         rx[m]->control_word = 0x0007;
-                else if (state == 0x0023)         rx[m]->control_word = 0x000F;
-                else if (state == 0x0027)         { enabled[m] = 1; start_pos[m] = tx[m]->position_actual; rx[m]->control_word = 0x000F; }
+                if (drive_ready(m, &enabled[m], &start_pos[m]))
+                {
+                    rx[m]->target_position = start_pos[m];   /* hold until all enabled */
+                    rx[m]->control_word = 0x000F;
+                }
                 if (!enabled[m]) all_enabled = 0;
             }
             ecx_send_processdata(&ctx);
@@ -183,11 +219,51 @@ int main(int argc, char *argv[])
         if (!all_enabled) printf("enable timeout\n");
     }
 
-    /* Synchronized travelling wave (phase quarter-cycle apart per motor). */
+    /* ---- Phase 1: identify each motor — one revolution, motor 1 -> 4 ---- */
     if (all_enabled)
     {
-        for (int m = 0; m < n; m++) phase[m] = m * (M_PI / 2.0);
-        printf("all %d motor(s) enabled — running synchronized wave (Ctrl-C to stop)\n", n);
+        long id_cycles = (IDENT_MS + IDENT_HOLD + IDENT_MS + IDENT_PAUSE) / CYCLE_MS;
+        for (int m = 0; m < n && running; m++)
+        {
+            int32_t base = start_pos[m];
+            printf(">>> identify motor %d (slave %d): one revolution\n", m + 1, m + 1);
+            for (long c = 0; c < id_cycles && running; c++)
+            {
+                next.tv_nsec += CYCLE_NS + toff;
+                if (next.tv_nsec >= 1000000000) { next.tv_nsec -= 1000000000; next.tv_sec++; }
+                clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+                wkc = ecx_receive_processdata(&ctx, EC_TIMEOUTRET);
+                if (wkc > 0) ec_sync(ctx.DCtime, CYCLE_NS, &toff);
+
+                long ms = c * CYCLE_MS;
+                double off;
+                if      (ms < IDENT_MS)                 off = (double)ms / IDENT_MS;
+                else if (ms < IDENT_MS + IDENT_HOLD)   off = 1.0;
+                else if (ms < 2*IDENT_MS + IDENT_HOLD) off = 1.0 - (double)(ms - IDENT_MS - IDENT_HOLD) / IDENT_MS;
+                else                                   off = 0.0;
+
+                for (int k = 0; k < n; k++)
+                {
+                    if (!drive_ready(k, &enabled[k], &start_pos[k])) continue;
+                    if (k == m) rx[k]->target_position = base + (int32_t)(off * ENCODER_RES);
+                    else        rx[k]->target_position = start_pos[k];
+                    rx[k]->control_word = 0x000F;
+                }
+                ecx_send_processdata(&ctx);
+            }
+        }
+        printf("identification done\n");
+    }
+
+    /* ---- Phase 2: synchronized travelling wave (quarter-cycle per motor) ---- */
+    if (all_enabled && running)
+    {
+        for (int m = 0; m < n; m++)
+        {
+            start_pos[m] = tx[m]->position_actual;
+            phase[m] = m * (M_PI / 2.0);
+        }
+        printf("running synchronized wave (Ctrl-C to stop)\n");
 
         long t = 0;
         while (running)
@@ -204,19 +280,7 @@ int main(int argc, char *argv[])
 
             for (int m = 0; m < n; m++)
             {
-                uint16_t sw = tx[m]->status_word, state = sw & 0x006F;
-                if (sw & 0x0008) { rx[m]->control_word = 0x0080; enabled[m] = 0; continue; }
-                if (!enabled[m])
-                {
-                    /* fault cleared mid-run: pin to actual + re-enable, and
-                     * re-latch the start position so it resumes without a jump */
-                    rx[m]->target_position = tx[m]->position_actual;
-                    if ((sw & 0x004F) == 0x0040)      rx[m]->control_word = 0x0006;
-                    else if (state == 0x0021)         rx[m]->control_word = 0x0007;
-                    else if (state == 0x0023)         rx[m]->control_word = 0x000F;
-                    else if (state == 0x0027)         { enabled[m] = 1; start_pos[m] = tx[m]->position_actual; }
-                    continue;
-                }
+                if (!drive_ready(m, &enabled[m], &start_pos[m])) continue;
                 rx[m]->target_position = start_pos[m] + (int32_t)(amp * sin(2.0 * M_PI * DEMO_FREQ_HZ * sec - phase[m]));
                 rx[m]->control_word = 0x000F;
             }

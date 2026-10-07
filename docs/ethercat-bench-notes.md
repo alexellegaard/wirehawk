@@ -46,7 +46,7 @@ integer multiple of 250 µs and ≥ ~1.25× the command period (~100 Hz control)
 | `a6_fault`   | Read 0x203F drive fault + 0x603F CiA error + 0x6041 status |
 | `a6_step_test` | Ramp-and-hold settle test (peak ferr + settle time per motor) |
 | `a6_profile_test` | Trapezoidal speed/accel sweep (coast velocity chatter + dwell ferr) |
-| `a6_demo`    | Synchronized sine-wave demo (travelling wave across the motors) |
+| `a6_demo`    | Identify each motor (1 rev each, 1→4), then synchronized sine wave |
 | `a6_reset`   | Fault reset (0x6040=0x80) on all slaves |
 
 All SDO tools run in Safe-OP (motors disabled); they never enable the drives.
