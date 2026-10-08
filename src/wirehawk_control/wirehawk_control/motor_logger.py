@@ -20,6 +20,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from wirehawk_msgs.msg import MotorCommand, MotorState
+from std_msgs.msg import Float64MultiArray
 
 
 class MotorLogger(Node):
@@ -30,6 +31,7 @@ class MotorLogger(Node):
         self.declare_parameter('cmd_topic', '/cmd/motors')
         self.declare_parameter('sim_state_topic', '/sim/state/motors')
         self.declare_parameter('real_state_topic', '/real/state/motors')
+        self.declare_parameter('diag_topic', '/cdpr/diagnostic')
 
         out = self.get_parameter('output_dir').value
         os.makedirs(out, exist_ok=True)
@@ -38,9 +40,10 @@ class MotorLogger(Node):
             'cmd':  open(os.path.join(out, f'cmd_{stamp}.csv'),  'w', newline=''),
             'sim':  open(os.path.join(out, f'sim_{stamp}.csv'),  'w', newline=''),
             'real': open(os.path.join(out, f'real_{stamp}.csv'), 'w', newline=''),
+            'diag': open(os.path.join(out, f'diag_{stamp}.csv'), 'w', newline=''),
         }
         self.writers = {k: csv.writer(v) for k, v in self.files.items()}
-        self.bufs = {'cmd': [], 'sim': [], 'real': []}
+        self.bufs = {'cmd': [], 'sim': [], 'real': [], 'diag': []}
         self.t0 = time.monotonic()
 
         self.create_subscription(
@@ -51,6 +54,9 @@ class MotorLogger(Node):
         self.create_subscription(
             MotorState, self.get_parameter('real_state_topic').value,
             lambda m: self.on_state('real', m), 100)
+        self.create_subscription(
+            Float64MultiArray, self.get_parameter('diag_topic').value,
+            self.on_diag, 100)
         self.create_timer(self.get_parameter('flush_period_s').value, self.flush)
         self.get_logger().info(
             f'logging cmd[{self.get_parameter("cmd_topic").value}] '
@@ -62,6 +68,9 @@ class MotorLogger(Node):
 
     def on_state(self, kind, m):
         self.bufs[kind].append([time.monotonic() - self.t0] + list(m.position))
+
+    def on_diag(self, m):
+        self.bufs['diag'].append([time.monotonic() - self.t0] + list(m.data))
 
     def flush(self):
         for k in self.bufs:

@@ -3,6 +3,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, PoseStamped
+from std_msgs.msg import Float64MultiArray
 from wirehawk_msgs.msg import MotorCommand, MotorState
 from ament_index_python.packages import get_package_share_directory
 
@@ -80,6 +81,7 @@ class CDPRNode(Node):
         # --- task input + diagnostic (legacy names, kept for teleop/planner) ---
         self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_cb, 10)
         self.pose_pub = self.create_publisher(PoseStamped, '/cdpr/current_pose', 10)
+        self.diag_pub = self.create_publisher(Float64MultiArray, '/cdpr/diagnostic', 10)
 
         self.timer = self.create_timer(self.dt, self.timer_callback)
         self.get_logger().info(
@@ -119,6 +121,18 @@ class CDPRNode(Node):
         pose.pose.position.y = float(self.controller.P_est[1])
         pose.pose.position.z = float(self.controller.P_est[2])
         self.pose_pub.publish(pose)
+
+        # Diagnostic: FK estimate, target, integral length correction, and the
+        # position error they produce — the smoking gun for the FK/integral loop
+        # going unstable during fast reversals.
+        diag = Float64MultiArray()
+        diag.data = (
+            [float(x) for x in self.controller.P_est]
+            + [float(x) for x in self.controller.target_pos]
+            + [float(x) for x in self.controller.L_integral]
+            + [float(x) for x in (self.controller.target_pos - self.controller.P_est)]
+        )
+        self.diag_pub.publish(diag)
 
 
 def main(args=None):
