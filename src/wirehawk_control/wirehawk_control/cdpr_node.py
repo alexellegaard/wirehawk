@@ -131,6 +131,7 @@ class CDPRNode(Node):
             + [float(x) for x in self.controller.target_pos]
             + [float(x) for x in self.controller.L_integral]
             + [float(x) for x in (self.controller.target_pos - self.controller.P_est)]
+            + [1.0 if self.controller.fk_converged else 0.0]
         )
         self.diag_pub.publish(diag)
 

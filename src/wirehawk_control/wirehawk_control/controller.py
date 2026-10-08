@@ -42,6 +42,7 @@ class CDPRController:
         # Nominal measured length until the first encoder readback arrives.
         self.L_m = self.kinematics.compute_commanded_lengths(self.target_pos)
         self.L_integral = np.zeros(self.kinematics.num_cables, dtype=float)
+        self.fk_converged = True
         self.command_counts = lengths_to_counts(self.L_m, self.spec)
         self.command_vel = np.zeros(self.kinematics.num_cables, dtype=float)
         self.command_was_clamped = np.zeros(self.kinematics.num_cables, dtype=bool)
@@ -88,7 +89,7 @@ class CDPRController:
             self.L_m = counts_to_lengths(measured_counts, self.spec)
 
         # 4. Elastic FK from MEASURED lengths (not the commanded ones).
-        self.P_est, _converged = self.kinematics.elastic_forward_kinematics(
+        self.P_est, self.fk_converged = self.kinematics.elastic_forward_kinematics(
             self.L_m, self.EA, self.mass, self.P_est)
         self.P_est = np.clip(self.P_est, self.ws_min, self.ws_max)
 
@@ -103,7 +104,21 @@ class CDPRController:
         # still catching up on — hold the integral instead of accumulating it,
         # otherwise it winds up and overshoots. The ±0.5 m bound is a safety
         # clamp; the real cable-stretch correction is ~0.006 m.
-        self.L_integral -= np.where(self.command_was_clamped, 0.0, self.fk_gain * proj * dt)
+        #
+        # Convergence gate: under fast motion the elastic FK finds no static
+        # equilibrium and falls back to the geometric estimate, so the position
+        # error is a fallback-jump artifact. Freeze the integral then rather
+        # than winding it up on a bad estimate.
+        freeze = not self.fk_converged
+        self.L_integral -= np.where(self.command_was_clamped | freeze, 0.0,
+                                    self.fk_gain * proj * dt)
+        # Null-space projection: 4 cables drive 3 DOF, so L_integral has a
+        # redundant-cable component (null space of u^T) that shifts tension
+        # without moving the payload and drifts uncorrected. Keep only the
+        # position-relevant part (least-squares projection onto the cable
+        # direction vectors u).
+        coeffs = np.linalg.lstsq(u, self.L_integral, rcond=None)[0]
+        self.L_integral = u @ coeffs
         self.L_integral = np.clip(self.L_integral, -0.5, 0.5)
 
         # 7. Commanded lengths = geometric IK + accumulated correction.
