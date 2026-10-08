@@ -117,9 +117,20 @@ class CDPRController:
         new_counts = lengths_to_counts(L_d, self.spec)
         desired_vel = (new_counts - self.command_counts) / dt
         max_dv = self.max_cable_accel * dt
-        self.command_was_clamped = np.abs(desired_vel - self.command_vel) > max_dv
+        accel_clamped = np.abs(desired_vel - self.command_vel) > max_dv
         self.command_vel += np.clip(desired_vel - self.command_vel, -max_dv, max_dv)
-        self.command_vel = np.clip(self.command_vel, -self.max_cable_speed, self.max_cable_speed)
+        # Uniform speed clamp: if ANY cable would exceed max_cable_speed, scale
+        # ALL cable velocities by the same factor so the fastest just hits the
+        # limit. Cable velocity is the linear projection of the TCP velocity
+        # (v = J·ṗ), so uniform scaling preserves the task-space direction
+        # exactly — the old per-motor np.clip distorted it (broke the length
+        # ratios and bent the TCP path). Also flag it for the integral
+        # anti-windup (the drive lags a speed-limited command, so hold L_integral).
+        max_v = float(np.max(np.abs(self.command_vel)))
+        speed_clamped = max_v > self.max_cable_speed
+        if speed_clamped:
+            self.command_vel *= self.max_cable_speed / max_v
+        self.command_was_clamped = accel_clamped | speed_clamped
         self.command_counts = self.command_counts + np.rint(self.command_vel * dt).astype(np.int64)
         return self.command_counts
 
