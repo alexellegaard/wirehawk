@@ -6,7 +6,7 @@ ethercat_bridge:
                                  # (0.15 rev/update at 5 m/s), so even the clean motor rippled. 4 ms is
                                  # the sweet spot: 4x less clock jitter than 1 kHz, still a fine loop.
     counts_per_rev: 131072       # A6-1000EC 17-bit encoder
-    num_motors: 2                # bench: 2 motors = anchor 0 + anchor 1
+    num_motors: 4                # 4 motors = anchors 0-3 (full CDPR)
     rt_cpu: 3                    # isolated core the RT thread is pinned to
     max_speed: 6553600.0         # counts/s  (50 rev/s = drive rated 3000 rpm; ~3.1 m/s cable at core layer)
     max_accel: 2621440.0         # counts/s^2 = 20 rev/s^2 (x131072). Upper bound from the C sweep:
@@ -17,6 +17,6 @@ ethercat_bridge:
                                  # feedforward. Feedforward = d(cmd)/dt at the 100 Hz command rate; this
                                  # small term closes residual position drift without the sawtooth the old
                                  # v=err/dt form produced on a staircase target.
-    counts_offset: [0, 0]           # fixed bias on top of auto-zero (0 = mirror current pose on enable).
+    counts_offset: [0, 0, 0, 0]     # fixed bias on top of auto-zero (0 = mirror current pose on enable).
                                     # Auto-zero latches raw−logical at each enable, so no absolute
                                     # zero is needed on the bench (motors move between sessions).
