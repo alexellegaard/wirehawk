@@ -8,9 +8,9 @@ cdpr_node:
     workspace_max: [7.0, 7.0, 2.7]
     max_linear_speed: 1.0
     max_linear_accel: 4.0     # TCP accel clamp (~20 rev/s^2 at the motor — bench ceiling)
-    max_cable_speed: 6553600.0   # counts/s = 50 rev/s (drive rated 3000 rpm); per-motor drum
+    max_cable_speed: 10485760.0   # counts/s = 80 rev/s (5 m/s worst-case needs 79.6; 6000 rpm = 100 rev/s max); per-motor drum
                                  # rate clamp — MUST match the EtherCAT bridge's max_speed.
-    max_cable_accel: 2621440.0   # counts/s^2 = 20 rev/s^2; per-motor drum accel clamp — MUST
+    max_cable_accel: 6553600.0   # counts/s^2 = 50 rev/s^2 (3 m/s^2 task accel needs ~48); per-motor drum accel clamp — MUST
                                  # match the EtherCAT bridge's max_accel.
     rate_hz: 50.0
     cmd_timeout: 0.2

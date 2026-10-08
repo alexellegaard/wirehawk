@@ -8,8 +8,8 @@ ethercat_bridge:
     counts_per_rev: 131072       # A6-1000EC 17-bit encoder
     num_motors: 4                # 4 motors = anchors 0-3 (full CDPR)
     rt_cpu: 3                    # isolated core the RT thread is pinned to
-    max_speed: 6553600.0         # counts/s  (50 rev/s = drive rated 3000 rpm; ~3.1 m/s cable at core layer)
-    max_accel: 2621440.0         # counts/s^2 = 20 rev/s^2 (x131072). Upper bound from the C sweep:
+    max_speed: 10485760.0         # counts/s  (80 rev/s; 5 m/s TCP worst-case needs 79.6 rev/s; 6000 rpm = 100 rev/s max)
+    max_accel: 6553600.0         # counts/s^2 = 50 rev/s^2 (x131072). Matches 3 m/s^2 task accel (48 rev/s^2 needed). C-sweep history:
                                  # 45 rev/s at 20 rev/s^2 was "very slight jump, usable"; 45 gave a
                                  # metallic bump. 20M (152 rev/s^2) made WASD steps effectively instant
                                  # accel = the start jump. Reaches 50 rev/s in 2.5 s (gentler ramp).
