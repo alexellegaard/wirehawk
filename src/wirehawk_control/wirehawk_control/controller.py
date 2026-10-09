@@ -20,7 +20,7 @@ from .kinematics import CDPRKinematics
 
 
 class CDPRController:
-    def __init__(self, anchors, start_pos, ws_min, ws_max, max_speed, max_accel,
+    def __init__(self, anchors, start_pos, ws_min, ws_max, max_speed, max_accel, max_decel,
                  EA, mass, fk_gain, max_cable_speed, max_cable_accel, spec: WinchSpec):
         self.kinematics = CDPRKinematics(np.asarray(anchors, dtype=float))
         self.start_pos = np.asarray(start_pos, dtype=float)
@@ -28,6 +28,9 @@ class CDPRController:
         self.ws_max = np.asarray(ws_max, dtype=float)
         self.max_speed = float(max_speed)
         self.max_accel = float(max_accel)
+        self.max_decel = float(max_decel)
+        if self.max_decel <= 0.0:
+            self.max_decel = self.max_accel  # unset -> symmetric
         self.EA = float(EA)
         self.mass = float(mass)
         self.fk_gain = float(fk_gain)
@@ -61,10 +64,15 @@ class CDPRController:
         measured_counts: int array of per-winch encoder positions, or None if
         no feedback has arrived yet (then the last known length is reused).
         """
-        # 1. Acceleration slew-rate limiter.
+        # 1. Asymmetric slew-rate limiter: snappy acceleration (max_accel),
+        #    gentle braking/reversal (max_decel). Overshoot happens only on
+        #    deceleration (speed-loop integral windup on reversal), so brake
+        #    gently but accelerate hard.
         vel_diff = self.target_vel - self.filtered_vel
         diff_mag = float(np.linalg.norm(vel_diff))
-        max_dv = self.max_accel * dt
+        speeding_up = float(np.dot(vel_diff, self.filtered_vel)) >= 0.0
+        a = self.max_accel if speeding_up else self.max_decel
+        max_dv = a * dt
         if diff_mag > max_dv and diff_mag > 0.0:
             self.filtered_vel += (vel_diff / diff_mag) * max_dv
         else:
@@ -77,8 +85,8 @@ class CDPRController:
         #    (a symmetric clip would pin the TCP at the edge and trap it).
         d_upper = np.maximum(self.ws_max - self.target_pos, 0.0)
         d_lower = np.maximum(self.target_pos - self.ws_min, 0.0)
-        vmax_upper = np.sqrt(2.0 * self.max_accel * d_upper)   # max speed toward ws_max
-        vmax_lower = np.sqrt(2.0 * self.max_accel * d_lower)   # max speed toward ws_min
+        vmax_upper = np.sqrt(2.0 * self.max_decel * d_upper)   # brake toward ws_max
+        vmax_lower = np.sqrt(2.0 * self.max_decel * d_lower)   # brake toward ws_min
         vel = np.minimum(self.filtered_vel, vmax_upper)        # brake the +axis approach
         vel = np.maximum(vel, -vmax_lower)                     # brake the -axis approach
         self.target_pos += vel * dt

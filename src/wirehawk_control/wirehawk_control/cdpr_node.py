@@ -33,6 +33,7 @@ class CDPRNode(Node):
         self.declare_parameter('workspace_max', rclpy.Parameter.Type.DOUBLE_ARRAY)
         self.declare_parameter('max_linear_speed', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('max_linear_accel', rclpy.Parameter.Type.DOUBLE)
+        self.declare_parameter('max_linear_decel', -1.0)
         self.declare_parameter('max_cable_speed', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('max_cable_accel', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('rate_hz', rclpy.Parameter.Type.DOUBLE)
@@ -61,6 +62,7 @@ class CDPRNode(Node):
             ws_max=np.array(self.get_parameter('workspace_max').value, dtype=float),
             max_speed=float(self.get_parameter('max_linear_speed').value),
             max_accel=float(self.get_parameter('max_linear_accel').value),
+            max_decel=float(self.get_parameter('max_linear_decel').value),
             EA=float(self.get_parameter('cable_axial_stiffness').value),
             mass=float(self.get_parameter('payload_mass').value),
             fk_gain=float(self.get_parameter('fk_gain').value),
