@@ -27,6 +27,8 @@ setup(
             'keyboard_teleop = wirehawk_control.keyboard_teleop:main',
             'trajectory_planner = wirehawk_control.trajectory_planner:main',
             'motor_logger = wirehawk_control.motor_logger:main',
+            'bird_sweeper = wirehawk_control.bird_sweeper:main',
+            'missionplanner_dummy = wirehawk_control.missionplanner_dummy:main',
         ],
     },
 )
