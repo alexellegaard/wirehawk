@@ -25,6 +25,7 @@ class BirdSweeper(Node):
         self.declare_parameter('return_speed', 1.5)
         self.declare_parameter('z_height', 1.5)
         self.declare_parameter('home_tolerance', 0.1)
+        self.declare_parameter('decel_distance', 1.0)
         self.declare_parameter('target_timeout', 2.0)
         self.declare_parameter('rate_hz', 30.0)
 
@@ -32,6 +33,7 @@ class BirdSweeper(Node):
         self.return_speed = float(self.get_parameter('return_speed').value)
         self.z_height = float(self.get_parameter('z_height').value)
         self.home_tol = float(self.get_parameter('home_tolerance').value)
+        self.decel_dist = float(self.get_parameter('decel_distance').value)
         self.timeout = float(self.get_parameter('target_timeout').value)
         self.dt = 1.0 / float(self.get_parameter('rate_hz').value)
 
@@ -39,6 +41,7 @@ class BirdSweeper(Node):
         self.target = None
         self.target_speed = 0.0
         self.target_valid = False
+        self.passed = False
         self.last_target_time = self.get_clock().now()
 
         # Current TCP pose from the controller's FK estimate.
@@ -57,9 +60,15 @@ class BirdSweeper(Node):
             f'z={self.z_height} m, return_speed={self.return_speed} m/s')
 
     def target_cb(self, msg: BirdTarget):
-        self.target = np.array([msg.position.x, msg.position.y], dtype=float)
+        new_target = np.array([msg.position.x, msg.position.y], dtype=float)
+        new_valid = bool(msg.valid)
+        # Re-engage on a fresh target: a new position, or a new valid edge.
+        if self.target is None or not np.array_equal(new_target, self.target) \
+                or (new_valid and not self.target_valid):
+            self.passed = False
+        self.target = new_target
         self.target_speed = float(msg.speed)
-        self.target_valid = bool(msg.valid)
+        self.target_valid = new_valid
         self.last_target_time = self.get_clock().now()
 
     def pose_cb(self, msg: PoseStamped):
@@ -90,13 +99,17 @@ class BirdSweeper(Node):
         self.pub.publish(msg)
 
     def _sweep(self, tcp_xy):
+        if self.passed:
+            return np.zeros(2)  # already swept through; hold
         vec = self.target - tcp_xy
         dist = float(np.linalg.norm(vec))
         if dist < 1e-3:
+            self.passed = True
             return np.zeros(2)
-        # Pass detection: if we're already moving away from the target we've
-        # swept through it — hold instead of chasing an empty spot.
+        # Pass detection: once we're moving away from the target we've swept
+        # through it — latch and hold instead of re-engaging.
         if float(np.dot(vec, self.cmd_vel)) < 0.0:
+            self.passed = True
             return np.zeros(2)
         return self.target_speed * (vec / dist)
 
@@ -105,7 +118,14 @@ class BirdSweeper(Node):
         dist = float(np.linalg.norm(vec))
         if dist < self.home_tol:
             return np.zeros(2)
-        return self.return_speed * (vec / dist)
+        # Proportional deceleration inside the braking zone so the TCP stops
+        # at home instead of overshooting the deadband and oscillating.
+        if dist < self.decel_dist:
+            speed = self.return_speed * (dist / self.decel_dist)
+            speed = max(speed, 0.05)
+        else:
+            speed = self.return_speed
+        return speed * (vec / dist)
 
 
 def main(args=None):
