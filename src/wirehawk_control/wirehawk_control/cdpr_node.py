@@ -124,9 +124,9 @@ class CDPRNode(Node):
         pose.pose.position.z = float(self.controller.P_est[2])
         self.pose_pub.publish(pose)
 
-        # Diagnostic: FK estimate, target, integral length correction, and the
-        # position error they produce — the smoking gun for the FK/integral loop
-        # going unstable during fast reversals.
+        # Diagnostic: FK estimate, target, integral length correction, the
+        # position error, FK convergence flag, cable tensions (slack indicator)
+        # and the measured cable lengths (raw feedback cross-check).
         diag = Float64MultiArray()
         diag.data = (
             [float(x) for x in self.controller.P_est]
@@ -134,6 +134,8 @@ class CDPRNode(Node):
             + [float(x) for x in self.controller.L_integral]
             + [float(x) for x in (self.controller.target_pos - self.controller.P_est)]
             + [1.0 if self.controller.fk_converged else 0.0]
+            + [float(x) for x in self.controller.tensions]
+            + [float(x) for x in self.controller.L_m]
         )
         self.diag_pub.publish(diag)
 

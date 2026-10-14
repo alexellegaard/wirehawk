@@ -46,6 +46,7 @@ class CDPRController:
         self.L_m = self.kinematics.compute_commanded_lengths(self.target_pos)
         self.L_integral = np.zeros(self.kinematics.num_cables, dtype=float)
         self.fk_converged = True
+        self.tensions = np.zeros(self.kinematics.num_cables, dtype=float)
         self.command_counts = lengths_to_counts(self.L_m, self.spec)
         self.command_vel = np.zeros(self.kinematics.num_cables, dtype=float)
         self.command_was_clamped = np.zeros(self.kinematics.num_cables, dtype=bool)
@@ -100,6 +101,11 @@ class CDPRController:
         self.P_est, self.fk_converged = self.kinematics.elastic_forward_kinematics(
             self.L_m, self.EA, self.mass, self.P_est)
         self.P_est = np.clip(self.P_est, self.ws_min, self.ws_max)
+
+        # 4b. Cable tensions at the FK estimate — the slack indicator for
+        # workspace-boundary tuning (a far cable's tension -> 0 means the payload
+        # hangs from fewer cables and the FK loses observability).
+        self.tensions = self.kinematics.cable_tensions(self.P_est, self.L_m, self.EA)
 
         # 5. Position error (target vs FK estimate).
         e = self.target_pos - self.P_est
@@ -163,5 +169,6 @@ class CDPRController:
             'position': self.P_est.copy(),          # FK estimate (from counts)
             'target': self.target_pos.copy(),
             'measured_lengths': self.L_m.copy(),
+            'tensions': self.tensions.copy(),
             'command_counts': self.command_counts.copy(),
         }

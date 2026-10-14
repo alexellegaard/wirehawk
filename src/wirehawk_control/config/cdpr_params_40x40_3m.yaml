@@ -4,8 +4,8 @@ cdpr_node:
   ros__parameters:
     anchors: [20.0, 20.0, 3.0, 20.0, -20.0, 3.0, -20.0, -20.0, 3.0, -20.0, 20.0, 3.0]
     start_position: [0.0, 0.0, 1.5]
-    workspace_min: [-14.0, -14.0, 0.3]
-    workspace_max: [14.0, 14.0, 2.7]
+    workspace_min: [-19.0, -19.0, 0.3]
+    workspace_max: [19.0, 19.0, 2.7]
     max_linear_speed: 5.0
     max_linear_accel: 3.0
     max_linear_decel: 2.0

@@ -34,6 +34,22 @@ class CDPRKinematics:
         c = np.maximum(c, 1e-9)
         return d / c[:, None]
 
+    def cable_tensions(self, pos: np.ndarray, lengths: np.ndarray, EA: float) -> np.ndarray:
+        """Elastic cable tensions T_i = EA * max(C_i - L_i, 0) / L_i at a position.
+
+        T_i == 0 means the cable is slack (the measured length exceeds the
+        straight-line distance to the anchor), which is the observable sign that
+        the payload is hanging from fewer than all cables — the FK loses
+        observability. Used as the workspace-boundary slack indicator.
+        """
+        lengths = np.asarray(lengths, dtype=float)
+        pos = np.asarray(pos, dtype=float)
+        d = self.anchors - pos
+        c = np.linalg.norm(d, axis=1)
+        c = np.maximum(c, 1e-9)
+        stretch = c - lengths
+        return EA * np.maximum(stretch, 0.0) / np.maximum(lengths, 1e-9)
+
     def elastic_forward_kinematics(self, lengths, EA, mass, P_init,
                                    gravity=_GRAVITY, max_iter=40, tol=1e-9,
                                    max_jump=1.0):
