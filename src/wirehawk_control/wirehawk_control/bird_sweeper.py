@@ -37,7 +37,8 @@ class BirdSweeper(Node):
         self.declare_parameter('workspace_min', [-19.0, -19.0, 0.3])
         self.declare_parameter('workspace_max', [19.0, 19.0, 2.7])
         self.declare_parameter('max_decel', 2.0)
-        self.declare_parameter('approach_lookahead', 10.0)  # [m] how early the path turns in
+        self.declare_parameter('approach_lookahead', 10.0)  # [m] turn length (>= v^2/a = 8.3 m, the accel-limited MINIMUM radius)
+        self.declare_parameter('scare_radius', 1.0)   # [m] closest-approach distance to the bird
 
         self.home = np.array(self.get_parameter('home_position').value, dtype=float)
         self.return_speed = float(self.get_parameter('return_speed').value)
@@ -50,6 +51,7 @@ class BirdSweeper(Node):
         self.ws_max = np.array(self.get_parameter('workspace_max').value, dtype=float)
         self.max_decel = float(self.get_parameter('max_decel').value)
         self.lookahead = float(self.get_parameter('approach_lookahead').value)
+        self.scare_radius = float(self.get_parameter('scare_radius').value)
 
         # Target state (horizontal plane only; z is fixed by z_height).
         self.target = None
@@ -164,11 +166,10 @@ class BirdSweeper(Node):
         return v / n
 
     def _generate_curve(self, tcp_xy):
-        """Quadratic Bezier from the current pose to the bird, arriving with
-        tangent = arrival direction. Control point P1 = bird - alpha*dhat sits
-        upstream of the bird along the arrival direction; alpha scales with the
-        turn angle (sin(theta)) so an interior bird gets a near-straight path and
-        an edge bird gets a curve that sweeps in tangentially."""
+        """Quadratic Bezier through a flyby point offset scare_radius from the
+        bird, arriving with tangent = arrival direction d̂. alpha (the turn length)
+        is the accel-limited turn radius v²/a scaled by the turn angle sin(theta),
+        floored at 1 m so the tangent stays nonzero (pass through, not stop)."""
         dhat = self._arrival_direction()
         toward = self.target - np.asarray(tcp_xy, dtype=float)
         dtoward = float(np.linalg.norm(toward))
@@ -178,9 +179,18 @@ class BirdSweeper(Node):
             toward = toward / dtoward
         theta = np.arccos(np.clip(float(np.dot(toward, dhat)), -1.0, 1.0))
         alpha = max(self.lookahead * np.sin(theta), 1.0)
+
+        # Flyby point: offset scare_radius from the bird, perpendicular to the
+        # arrival direction, on the side toward home (into the workspace).
+        home_vec = self.home[:2] - self.target
+        n_hat = np.array([-dhat[1], dhat[0]])
+        if float(np.dot(n_hat, home_vec)) < 0.0:
+            n_hat = -n_hat
+        flyby = self.target + self.scare_radius * n_hat
+
         self.b_p0 = np.asarray(tcp_xy, dtype=float).copy()
-        self.b_p2 = self.target.copy()
-        self.b_p1 = self.target - alpha * dhat
+        self.b_p2 = flyby
+        self.b_p1 = flyby - alpha * dhat
         self.b_t = 0.0
         self.curve_ready = True
 

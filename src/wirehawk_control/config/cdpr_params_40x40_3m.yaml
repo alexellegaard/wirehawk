@@ -39,4 +39,5 @@ bird_sweeper:
     workspace_min: [-19.0, -19.0, 0.3]   # MUST match cdpr_node's workspace (the sweeper's wall distances)
     workspace_max: [19.0, 19.0, 2.7]
     max_decel: 2.0                        # m/s^2 — MUST match cdpr_node's max_linear_decel (post-pass braking rate)
-    approach_lookahead: 10.0              # [m] how early the sweep path turns in to the arrival angle
+    approach_lookahead: 10.0              # [m] turn length (>= v^2/a = 8.3 m, the accel-limited MINIMUM radius)
+    scare_radius: 1.0                     # [m] closest-approach distance to the bird
