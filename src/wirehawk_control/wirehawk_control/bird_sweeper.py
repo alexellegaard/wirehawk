@@ -1,9 +1,13 @@
 """Bird sweeper — the motion layer for bird deterrence.
 
 Turns a BirdTarget (from the decision layer) into a /cmd_vel stream:
-  * valid target  -> sweep THROUGH it at `speed` (5 m/s), horizontal only at a
-                     fixed z, then hold once passed — the "scare" is a fast
-                     approach that never decelerates toward the bird.
+  * valid target  -> fly a path that arrives AT the bird moving in a desired
+                     arrival direction — the angle that leaves enough runoff
+                     behind the bird to brake. The velocity is a blend of
+                     "toward the bird" (far) and the arrival velocity (near),
+                     so the path curves smoothly into the angle: straight
+                     through an interior bird, tangential along the wall for an
+                     edge bird, and a continuous blend in between.
   * no target     -> gentle return to home.
 
 Backend-agnostic: it talks only to cdpr_node via topics (BirdTarget in,
@@ -28,6 +32,12 @@ class BirdSweeper(Node):
         self.declare_parameter('decel_distance', 1.0)
         self.declare_parameter('target_timeout', 2.0)
         self.declare_parameter('rate_hz', 30.0)
+        # Arrival-angle geometry. These MUST match cdpr_node's workspace_min/max
+        # and max_linear_decel (same source of truth: cdpr_params_<world>.yaml).
+        self.declare_parameter('workspace_min', [-19.0, -19.0, 0.3])
+        self.declare_parameter('workspace_max', [19.0, 19.0, 2.7])
+        self.declare_parameter('max_decel', 2.0)
+        self.declare_parameter('approach_lookahead', 10.0)  # [m] how early the path turns in
 
         self.home = np.array(self.get_parameter('home_position').value, dtype=float)
         self.return_speed = float(self.get_parameter('return_speed').value)
@@ -36,6 +46,10 @@ class BirdSweeper(Node):
         self.decel_dist = float(self.get_parameter('decel_distance').value)
         self.timeout = float(self.get_parameter('target_timeout').value)
         self.dt = 1.0 / float(self.get_parameter('rate_hz').value)
+        self.ws_min = np.array(self.get_parameter('workspace_min').value, dtype=float)
+        self.ws_max = np.array(self.get_parameter('workspace_max').value, dtype=float)
+        self.max_decel = float(self.get_parameter('max_decel').value)
+        self.lookahead = float(self.get_parameter('approach_lookahead').value)
 
         # Target state (horizontal plane only; z is fixed by z_height).
         self.target = None
@@ -49,6 +63,14 @@ class BirdSweeper(Node):
 
         # Commanded velocity from the previous tick, used for pass detection.
         self.cmd_vel = np.zeros(2, dtype=float)
+
+        # Quadratic Bezier for the sweep path (arrives at the bird with the
+        # desired tangent). Regenerated per target.
+        self.curve_ready = False
+        self.b_p0 = None
+        self.b_p1 = None
+        self.b_p2 = None
+        self.b_t = 0.0
 
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.create_subscription(BirdTarget, '/bird_target', self.target_cb, 10)
@@ -66,6 +88,7 @@ class BirdSweeper(Node):
         if self.target is None or not np.array_equal(new_target, self.target) \
                 or (new_valid and not self.target_valid):
             self.passed = False
+            self.curve_ready = False  # re-plan the path for the new target
         self.target = new_target
         self.target_speed = float(msg.speed)
         self.target_valid = new_valid
@@ -98,20 +121,98 @@ class BirdSweeper(Node):
         msg.linear.z = 0.0
         self.pub.publish(msg)
 
+    def _arrival_vector(self):
+        """Velocity the sweep must arrive at the bird with, as a fraction of
+        v_max (|·| <= 1): the centre-to-bird direction, each toward-wall
+        component capped at the brake-able fraction, leftover filled tangentially.
+
+        0 walls -> straight through; 1 wall -> tilted (tangential along it);
+        2 walls -> a short vector (slower arrival). Continuous across all three.
+        """
+        nat = self.target - self.home[:2]
+        n = np.linalg.norm(nat)
+        if n < 1e-9:
+            return np.array([1.0, 0.0])
+        nat = nat / n
+        vmax = self.target_speed
+        a = self.max_decel
+
+        sx = 1.0 if nat[0] >= 0.0 else -1.0
+        sy = 1.0 if nat[1] >= 0.0 else -1.0
+        d_x = (self.ws_max[0] - self.target[0]) if sx > 0 else (self.target[0] - self.ws_min[0])
+        d_y = (self.ws_max[1] - self.target[1]) if sy > 0 else (self.target[1] - self.ws_min[1])
+        cap_x = np.sqrt(2.0 * a * max(d_x, 0.0)) / vmax
+        cap_y = np.sqrt(2.0 * a * max(d_y, 0.0)) / vmax
+
+        ax = min(abs(nat[0]), cap_x)
+        ay = min(abs(nat[1]), cap_y)
+        if ax * ax + ay * ay < 1.0 - 1e-9:
+            if ax >= cap_x - 1e-9:      # x capped -> fill tangentially in y
+                ay = min(np.sqrt(max(1.0 - ax * ax, 0.0)), cap_y)
+            else:                        # y capped -> fill tangentially in x
+                ax = min(np.sqrt(max(1.0 - ay * ay, 0.0)), cap_x)
+        return np.array([sx * ax, sy * ay])
+
+    def _arrival_direction(self):
+        """Unit direction of the arrival velocity (normalises _arrival_vector).
+        The corner's |·| < 1 shortening is left to the controller's soft boundary
+        to enforce; here we only need the direction."""
+        v = self._arrival_vector()
+        n = np.linalg.norm(v)
+        if n < 1e-9:
+            return np.array([1.0, 0.0])
+        return v / n
+
+    def _generate_curve(self, tcp_xy):
+        """Quadratic Bezier from the current pose to the bird, arriving with
+        tangent = arrival direction. Control point P1 = bird - alpha*dhat sits
+        upstream of the bird along the arrival direction; alpha scales with the
+        turn angle (sin(theta)) so an interior bird gets a near-straight path and
+        an edge bird gets a curve that sweeps in tangentially."""
+        dhat = self._arrival_direction()
+        toward = self.target - np.asarray(tcp_xy, dtype=float)
+        dtoward = float(np.linalg.norm(toward))
+        if dtoward < 1e-6:
+            toward = np.array([1.0, 0.0])
+        else:
+            toward = toward / dtoward
+        theta = np.arccos(np.clip(float(np.dot(toward, dhat)), -1.0, 1.0))
+        alpha = max(self.lookahead * np.sin(theta), 1.0)
+        self.b_p0 = np.asarray(tcp_xy, dtype=float).copy()
+        self.b_p2 = self.target.copy()
+        self.b_p1 = self.target - alpha * dhat
+        self.b_t = 0.0
+        self.curve_ready = True
+
     def _sweep(self, tcp_xy):
         if self.passed:
             return np.zeros(2)  # already swept through; hold
-        vec = self.target - tcp_xy
-        dist = float(np.linalg.norm(vec))
-        if dist < 1e-3:
-            self.passed = True
-            return np.zeros(2)
+        if not self.curve_ready:
+            self._generate_curve(tcp_xy)
+
         # Pass detection: once we're moving away from the target we've swept
         # through it — latch and hold instead of re-engaging.
+        vec = self.target - tcp_xy
         if float(np.dot(vec, self.cmd_vel)) < 0.0:
             self.passed = True
             return np.zeros(2)
-        return self.target_speed * (vec / dist)
+
+        if self.b_t >= 1.0:
+            self.passed = True
+            return np.zeros(2)
+
+        # Follow the Bezier at constant speed: advance the parameter so the arc
+        # length grows at v_max, and command the unit tangent.
+        t = self.b_t
+        p0, p1, p2 = self.b_p0, self.b_p1, self.b_p2
+        tangent = 2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)
+        mag = float(np.linalg.norm(tangent))
+        if mag < 1e-9:
+            self.passed = True
+            return np.zeros(2)
+        v = self.target_speed * (tangent / mag)
+        self.b_t += self.dt * self.target_speed / mag
+        return v
 
     def _return_home(self, tcp_xy):
         vec = self.home[:2] - tcp_xy

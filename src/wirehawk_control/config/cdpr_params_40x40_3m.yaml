@@ -33,3 +33,10 @@ keyboard_teleop:
     max_linear_speed: 5.0     # m/s cap (matches the '5' key)
     max_linear_accel: 4.0     # m/s^2 ramp rate (~20 rev/s^2 at the motor — Alex's bench ceiling)
     rate_hz: 30.0
+
+bird_sweeper:
+  ros__parameters:
+    workspace_min: [-19.0, -19.0, 0.3]   # MUST match cdpr_node's workspace (the sweeper's wall distances)
+    workspace_max: [19.0, 19.0, 2.7]
+    max_decel: 2.0                        # m/s^2 — MUST match cdpr_node's max_linear_decel (post-pass braking rate)
+    approach_lookahead: 10.0              # [m] how early the sweep path turns in to the arrival angle
