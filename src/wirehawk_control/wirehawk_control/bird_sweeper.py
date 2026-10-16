@@ -157,26 +157,29 @@ class BirdSweeper(Node):
 
     def _sweep(self, tcp_xy):
         """Line-following law: fly along the arrival line through the bird at
-        v_max, with a lateral correction proportional to the signed perpendicular
-        distance from the line. Closed-loop (recomputed every tick) and
+        v_max, with a lateral correction proportional to the lateral
+        displacement vector n. Closed-loop (recomputed every tick) and
         continuous in time, so it tracks a moving bird and converges to a
         closest-approach of exactly scare_radius.
 
-          v = v_max * (a_hat - k * e * n_hat) / |a_hat - k * e * n_hat|
+          v = v_max * (a_hat - k * n) / |a_hat - k * n|
 
-        where a_hat is the arrival direction (unit), n_hat its unit normal, k
-        the lateral gain, and e = (p - b) . n_hat - scare_radius the signed
-        distance from the TCP p to the line through the bird b."""
+        where a_hat is the arrival direction (unit), k the lateral gain, and
+        n = (p - b) - ((p - b) . a_hat) a_hat the lateral displacement of the
+        TCP p from the line through the bird b (perpendicular component; |n| is
+        the lateral distance)."""
         if self.passed:
             return np.zeros(2)  # already swept through; hold
 
         p = np.asarray(tcp_xy, dtype=float)
         b = self.target
         a_hat = self._arrival_direction()
-        n_hat = np.array([-a_hat[1], a_hat[0]])   # unit normal to a_hat
-        e = float(np.dot(p - b, n_hat)) - self.scare_radius
+        # n = lateral displacement: the perpendicular component of (p - b),
+        # pointing from the line toward the TCP. |n| is the lateral distance.
+        # (scare_radius offset = shift the line; 0 for now, so no r-term)
+        n = (p - b) - np.dot(p - b, a_hat) * a_hat
 
-        direction = a_hat - self.lateral_gain * e * n_hat
+        direction = a_hat - self.lateral_gain * n
         dmag = float(np.linalg.norm(direction))
         if dmag < 1e-9:
             direction = a_hat
