@@ -50,6 +50,12 @@ class CDPRController:
         self.command_counts = lengths_to_counts(self.L_m, self.spec)
         self.command_vel = np.zeros(self.kinematics.num_cables, dtype=float)
         self.command_was_clamped = np.zeros(self.kinematics.num_cables, dtype=bool)
+        # Resume state: latch the actual pose on startup instead of commanding
+        # home. `resumed` flips once the first encoder readback seeds the
+        # command; `target_latched` flips once the FK converges and the target
+        # is latched to the estimated pose.
+        self.resumed = False
+        self.target_latched = False
 
     def set_target_velocity(self, v) -> None:
         """Task-space velocity command (from /cmd_vel)."""
@@ -96,6 +102,11 @@ class CDPRController:
         # 3. Measured cable lengths from encoder counts (the only feedback).
         if measured_counts is not None:
             self.L_m = counts_to_lengths(measured_counts, self.spec)
+            if not self.resumed:
+                # Resume: seed the command to the actual encoder position so
+                # the controller holds wherever the cables are (no home slew).
+                self.command_counts = measured_counts.astype(np.int64).copy()
+                self.resumed = True
 
         # 4. Elastic FK from MEASURED lengths (not the commanded ones).
         self.P_est, self.fk_converged = self.kinematics.elastic_forward_kinematics(
@@ -106,6 +117,16 @@ class CDPRController:
         # workspace-boundary tuning (a far cable's tension -> 0 means the payload
         # hangs from fewer cables and the FK loses observability).
         self.tensions = self.kinematics.cable_tensions(self.P_est, self.L_m, self.EA)
+
+        # Resume startup: until the FK has converged on the measured lengths,
+        # hold the seeded command in place (trust lengths -> infer pose -> hold,
+        # no motion). Once converged, latch the target to the estimated pose and
+        # resume normal control from there.
+        if self.resumed and not self.target_latched:
+            if not self.fk_converged:
+                return self.command_counts
+            self.target_pos = self.P_est.copy()
+            self.target_latched = True
 
         # 5. Position error (target vs FK estimate).
         e = self.target_pos - self.P_est
