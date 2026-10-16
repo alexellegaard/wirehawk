@@ -174,6 +174,13 @@ class BirdSweeper(Node):
         p = np.asarray(tcp_xy, dtype=float)
         b = self.target
         a_hat = self._arrival_direction()
+        # If the TCP is already past the bird (far side of the arrival line),
+        # flip the line direction so it comes back AT the bird instead of
+        # flying away from it. s is the along-line progress; n below is
+        # sign-invariant, so only the "forward" sense changes.
+        s = float(np.dot(p - b, a_hat))
+        if s > 0.0:
+            a_hat = -a_hat
         # n = lateral displacement: the perpendicular component of (p - b),
         # pointing from the line toward the TCP. |n| is the lateral distance.
         # (scare_radius offset = shift the line; 0 for now, so no r-term)
