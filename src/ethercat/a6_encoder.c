@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     printf("SAFE_OP reached\n");
 
     /* "set <slave> <mode>": write C00.07 (0x2000:08) on ONE slave. */
-    if (argc >= 2 && strcmp(argv[2], "set") == 0)
+    if (argc >= 3 && strcmp(argv[2], "set") == 0)
     {
         if (argc < 5) { usage(); ecx_close(&ctx); return 1; }
         int slave = atoi(argv[3]);
