@@ -233,9 +233,10 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
     // ---- motion state init (hold current position) ----
     MotionState motion[MAX_MOTORS];
     bool fault_reset[MAX_MOTORS] = {false};
-    // Auto-zero: on enable, latch raw−logical so the first streamed target maps
-    // onto the current position (no startup slew). Makes counts_offset a fixed
-    // bias rather than a fragile absolute zero; re-latched every enable.
+    // Auto-zero (uncalibrated fallback): on enable, latch raw-logical so the
+    // first streamed target maps onto the current position (no startup slew).
+    // Disabled once counts_offset is calibrated (nonzero) — the absolute
+    // encoder position is then trusted directly and the controller resumes.
     int64_t zero_offset[MAX_MOTORS] = {0};
     bool    zeroed[MAX_MOTORS] = {false};
     for (int i = 0; i < N; i++) {
@@ -318,13 +319,13 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
             } else if (state == 0x0027) {            // operation enabled -> stream
                 int32_t tgt = motion[i].cmd;
                 if (data->target_valid.load()) {
-                    if (!zeroed[i]) {                // auto-zero once per enable
+                    if (!g_cfg.calibrated && !zeroed[i]) {   // auto-zero once per enable (uncalibrated fallback only)
                         zero_offset[i] = (int64_t)tx[i]->position_actual - (int64_t)target[i];
                         zeroed[i] = true;
-                        printf("RT: motor %d auto-zero offset = %lld counts\n",
+                        printf("RT: motor %d auto-zero offset = %lld counts (uncalibrated)\n",
                                i, (long long)zero_offset[i]);
                     }
-                    tgt = (int32_t)((int64_t)target[i] + zero_offset[i]);
+                    tgt = (int32_t)((int64_t)target[i] + (g_cfg.calibrated ? 0 : zero_offset[i]));
                 }
                 step_trapezoid(motion[i], tgt, target_vel[i],
                                g_cfg.max_speed, g_cfg.max_accel,
@@ -341,11 +342,11 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
         {
             std::lock_guard<std::mutex> lk(data->mtx);
             for (int i = 0; i < N; i++) {
-                // Publish the LOGICAL position (command frame): undo the auto-zero
-                // latch and the fixed counts_offset so state/motors is directly
-                // comparable to cmd/motors (what the controller's FK expects).
+                // Publish the LOGICAL position (command frame): undo the fixed
+                // counts_offset (and the auto-zero latch when uncalibrated) so
+                // state/motors is directly comparable to cmd/motors.
                 data->actual_position[i] = (int32_t)((int64_t)tx[i]->position_actual
-                                                     - zero_offset[i]
+                                                     - (g_cfg.calibrated ? 0 : zero_offset[i])
                                                      - g_cfg.counts_offset[i]);
                 data->actual_torque[i]   = tx[i]->torque_actual;
                 data->status_word[i]     = tx[i]->status_word;

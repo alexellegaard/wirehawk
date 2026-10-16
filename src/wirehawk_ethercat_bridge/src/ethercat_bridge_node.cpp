@@ -44,6 +44,11 @@ int main(int argc, char** argv)
         auto co = node->get_parameter("counts_offset").as_integer_array();
         for (size_t i = 0; i < co.size() && i < cfg.counts_offset.size(); i++)
             cfg.counts_offset[i] = co[i];
+        // calibrated = any nonzero offset (all-zero is the uncalibrated default,
+        // which keeps the auto-zero safety fallback active in the RT loop).
+        cfg.calibrated = false;
+        for (size_t i = 0; i < cfg.counts_offset.size(); i++)
+            if (cfg.counts_offset[i] != 0) { cfg.calibrated = true; break; }
     }
 
     BridgeData data;
