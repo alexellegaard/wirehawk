@@ -33,6 +33,7 @@ make clean        # remove all binaries
 | `a6_reset` | clear a latched fault (control word 0x80) on all slaves |
 | `a6_inertia` | read/set inertia ratio + stiffness; `tune` = offline inertia auto-tune |
 | `a6_sdo` | generic SDO read/write on all slaves (any object) + EEPROM save |
+| `a6_encoder` | read absolute-encoder mode C00.07 + position (0x6063/0x6064) + faults; `set <slave> <mode>` writes the mode on one slave (battery test) |
 
 ## Usage
 
