@@ -83,8 +83,9 @@ static void print_slave(int s)
 static void usage(void)
 {
     printf("Usage:\n");
-    printf("  sudo ./a6_encoder <ifname>                  read all slaves\n");
-    printf("  sudo ./a6_encoder <ifname> set <slave> <mode>   write C00.07 on one slave\n");
+    printf("  sudo ./a6_encoder <ifname>                    read all slaves\n");
+    printf("  sudo ./a6_encoder <ifname> set <slave> <mode> write C00.07 on one slave\n");
+    printf("  sudo ./a6_encoder <ifname> reset <slave>      write F31.10=4 (clear Er208, reset multi-turn)\n");
 }
 
 int main(int argc, char **argv)
@@ -104,27 +105,48 @@ int main(int argc, char **argv)
     ecx_statecheck(&ctx, 0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE * 4);
     printf("SAFE_OP reached\n");
 
-    /* "set <slave> <mode>": write C00.07 (0x2000:08) on ONE slave. */
-    if (argc >= 3 && strcmp(argv[2], "set") == 0)
+    /* Subcommands (single-slave writes) */
+    if (argc >= 3)
     {
-        if (argc < 5) { usage(); ecx_close(&ctx); return 1; }
-        int slave = atoi(argv[3]);
-        uint32_t mode = (uint32_t)strtoul(argv[4], NULL, 0);
-        if (slave < 1 || slave > ctx.slavecount)
+        if (strcmp(argv[2], "set") == 0)
         {
-            printf("slave %d out of range (1..%d)\n", slave, ctx.slavecount);
-            ecx_close(&ctx);
-            return 1;
+            /* C00.07 (0x2000:08): encoder mode selector. */
+            if (argc < 5) { usage(); ecx_close(&ctx); return 1; }
+            int slave = atoi(argv[3]);
+            uint32_t mode = (uint32_t)strtoul(argv[4], NULL, 0);
+            if (slave < 1 || slave > ctx.slavecount)
+            {
+                printf("slave %d out of range (1..%d)\n", slave, ctx.slavecount);
+                ecx_close(&ctx); return 1;
+            }
+            int ok = sdo_write(slave, 0x2000, 8, 2, mode);
+            uint32_t rb = 0;
+            int okr = sdo_read(slave, 0x2000, 8, 2, &rb);
+            printf("slave %d (motor %d): C00.07 write=%u (%s) [%s]  readback=%u (%s) [%s]\n",
+                   slave, slave - 1, mode, mode_name(mode), ok ? "OK" : "FAIL",
+                   rb, mode_name(rb), okr ? "OK" : "FAIL");
+            printf("NOTE: C00.07 takes effect only after re-power-on.\n");
+            ecx_close(&ctx); return 0;
         }
-        int ok = sdo_write(slave, 0x2000, 8, 2, mode);
-        uint32_t rb = 0;
-        int okr = sdo_read(slave, 0x2000, 8, 2, &rb);
-        printf("slave %d (motor %d): C00.07 write=%u (%s) [%s]  readback=%u (%s) [%s]\n",
-               slave, slave - 1, mode, mode_name(mode), ok ? "OK" : "FAIL",
-               rb, mode_name(rb), okr ? "OK" : "FAIL");
-        printf("NOTE: C00.07 takes effect only after re-power-on.\n");
-        ecx_close(&ctx);
-        return 0;
+        if (strcmp(argv[2], "reset") == 0)
+        {
+            /* F31.10 (0x2031:11h = sub-index 17 decimal) = 4:
+             * "Reset encoder fault and multi-turn data" — clears Er208. */
+            if (argc < 4) { usage(); ecx_close(&ctx); return 1; }
+            int slave = atoi(argv[3]);
+            if (slave < 1 || slave > ctx.slavecount)
+            {
+                printf("slave %d out of range (1..%d)\n", slave, ctx.slavecount);
+                ecx_close(&ctx); return 1;
+            }
+            int ok = sdo_write(slave, 0x2031, 17, 2, 4);
+            uint32_t rb = 0;
+            int okr = sdo_read(slave, 0x2031, 17, 2, &rb);
+            printf("slave %d (motor %d): F31.10 (0x2031:11h) write=4 [%s]  readback=%u [%s]\n",
+                   slave, slave - 1, ok ? "OK" : "FAIL", rb, okr ? "OK" : "FAIL");
+            printf("NOTE: re-power-on after the reset; then homing (or the hand-rotation test).\n");
+            ecx_close(&ctx); return 0;
+        }
     }
 
     for (int s = 1; s <= ctx.slavecount; s++)
