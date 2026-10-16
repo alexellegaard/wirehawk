@@ -131,10 +131,10 @@ class BirdSweeper(Node):
 
         sx = 1.0 if nat[0] >= 0.0 else -1.0
         sy = 1.0 if nat[1] >= 0.0 else -1.0
-        d_x = (self.ws_max[0] - self.target[0]) if sx > 0 else (self.target[0] - self.ws_min[0])
-        d_y = (self.ws_max[1] - self.target[1]) if sy > 0 else (self.target[1] - self.ws_min[1])
-        cap_x = np.sqrt(2.0 * a * max(d_x, 0.0)) / vmax
-        cap_y = np.sqrt(2.0 * a * max(d_y, 0.0)) / vmax
+        dist_x = (self.ws_max[0] - self.target[0]) if sx > 0 else (self.target[0] - self.ws_min[0])
+        dist_y = (self.ws_max[1] - self.target[1]) if sy > 0 else (self.target[1] - self.ws_min[1])
+        cap_x = np.sqrt(2.0 * a * max(dist_x, 0.0)) / vmax
+        cap_y = np.sqrt(2.0 * a * max(dist_y, 0.0)) / vmax
 
         ax = min(abs(nat[0]), cap_x)
         ay = min(abs(nat[1]), cap_y)
