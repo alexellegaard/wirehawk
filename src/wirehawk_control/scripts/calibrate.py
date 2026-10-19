@@ -48,10 +48,18 @@ def length_to_counts(length_m, spool):
 
 
 def read_raw_positions():
-    out = subprocess.run(
-        ["sudo", A6_ENCODER, "eth0"],
-        capture_output=True, text=True, check=True,
-    ).stdout
+    try:
+        out = subprocess.run(
+            ["sudo", A6_ENCODER, "eth0"],
+            capture_output=True, text=True, check=True,
+        ).stdout
+    except subprocess.CalledProcessError as e:
+        sys.stderr.write(f"a6_encoder failed (exit {e.returncode}):\n{e.stdout}{e.stderr}\n")
+        sys.stderr.write(
+            "Tip: run `sudo -v` first to cache your password (sudo's prompt gets\n"
+            "swallowed when its output is captured), or run\n"
+            "`sudo ./a6_encoder eth0` by hand to see the error directly.\n")
+        raise
     pos = [int(m.group(1)) for m in re.finditer(r"pos\s+0x6064\s*=\s*(-?\d+)", out)]
     if len(pos) != 4:
         raise RuntimeError(f"expected 4 slaves, parsed {len(pos)}:\n{out}")
