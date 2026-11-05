@@ -6,7 +6,7 @@ CFLAGS  = -Wall -O2 -I$(SOEM_DIR)/include -I$(SOEM_DIR)/build/include -I$(SOEM_D
 LDFLAGS = $(SOEM_LIB) -lpthread -lm
 
 BINS = a6_reset a6_gains a6_step_test a6_sync a6_inertia a6_fault \
-       a6_profile_test a6_sdo a6_demo a6_encoder a6_temp
+       a6_profile_test a6_sdo a6_demo a6_encoder a6_temp a6_temp_stresstest
 
 all: $(BINS)
 
@@ -42,6 +42,9 @@ a6_encoder: a6_encoder.c $(SOEM_LIB)
 
 a6_temp: a6_temp.c $(SOEM_LIB)
 	gcc $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+a6_temp_stresstest: a6_temp_stresstest.c $(SOEM_LIB)
+	gcc $(CFLAGS) -o $@ $< $(LDFLAGS) -lm
 
 # Convenience: clone + build SOEM if it isn't there yet.
 $(SOEM_LIB):
