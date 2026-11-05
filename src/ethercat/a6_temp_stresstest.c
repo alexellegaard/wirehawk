@@ -1,30 +1,33 @@
 /* a6_temp_stresstest.c — heat stress test for the drive enclosure.
  *
- * Runs a repeating triangle-VELOCITY profile (accelerate 0→+V, decelerate +V→0,
- * accelerate 0→−V, decelerate −V→0, repeat) so |torque| ≈ constant — the max
- * heat a given acceleration can produce. Heat ∝ torque² = (J·α)² (I²R), NOT
- * speed, so the acceleration is the heat knob, not the velocity amplitude.
+ * Primary heat source is the ENABLED drive itself: the fan, the power-stage
+ * idle/switching losses, and the small holding current — all present even at
+ * zero motor speed (on the order of 10–20 W before the motor turns). The
+ * back-and-forth motion is a gentle add-on (accel-torque I²R) that also keeps
+ * the drive clearly active. So the real job here is: enable the drive, keep it
+ * active, and log the temperature rise.
  *
- * While running, reads the drive heatsink temperature (U40.30 = SDO 0x2040,
- * sub-index 0x31, I16, 0.1 °C/unit) once per second and prints it, so you can
- * watch the enclosure warm up.
+ * Motion: a repeating triangle-VELOCITY profile (accelerate 0→+V, decelerate
+ * +V→0, accelerate 0→−V, decelerate −V→0, repeat). |torque| ≈ constant at
+ * J·accel. Keep accel in the gentle range — ~20–40 rev/s²; >45 rev/s² is where
+ * a free shaft starts to clank/shake the table. Speed amplitude sets the swing
+ * (V²/(2a) rev per half-cycle); keep it low on a spool so the rope barely pays out.
+ *
+ * Logging:
+ *   - every 10 s: append one row to a CSV (elapsed_s, temp per motor in °C)
+ *   - every 60 s: print a line to the terminal
  *
  * Usage:
  *   sudo ./a6_temp_stresstest <ifname> <speed_rev_s> <accel_rev_s2> [duration_s]
- *     speed_rev_s   velocity amplitude (keep low on a spool so the rope barely moves)
- *     accel_rev_s2  acceleration — THIS sets the heat (torque = inertia × accel)
- *     duration_s    0 (or omitted) = run until Ctrl-C
+ *     duration_s 0 (or omitted) = run until Ctrl-C
  *
- * Example:
- *   sudo ./a6_temp_stresstest eth0 10 30        # 10 rev/s, 30 rev/s², until Ctrl-C
- *   sudo ./a6_temp_stresstest eth0 10 30 1800   # same, 30 min then stop
+ * Example (gentle compromise):
+ *   sudo ./a6_temp_stresstest eth0 10 30
+ *   sudo ./a6_temp_stresstest eth0 10 30 1800   # 30 min then stop
  *
- * NOTE: free shafts / loose spools have LOW inertia, so the torque (= J·α) and
- * therefore the heat are far below the real tensioned system. Expect only a
- * small temperature rise on the bench; this is a setup smoke test, not the full
- * thermal validation (which needs the real load).
+ * The CSV lands in the current directory as temp_stresstest_YYYYmmdd_HHMMSS.csv.
  *
- * CSP + DC sync, all slaves commanded identically. FREE SHAFTS — no load.
+ * CSP + DC sync, all slaves commanded identically.
  */
 #define _GNU_SOURCE
 
@@ -113,6 +116,7 @@ int main(int argc, char *argv[])
     ec_groupt *grp;
     uint8_t io_map[4096] = {0};
     int wkc = 0, n;
+    FILE *logfile = NULL;
 
     if (argc < 4 || argc > 5)
     {
@@ -135,17 +139,31 @@ int main(int argc, char *argv[])
     double accel_cpc2 = accel_rev_s2 * ENCODER_RES * cyc_s * cyc_s;    /* counts/cycle^2 */
     long   ramp_cycles   = (long)ceil(speed_cpc / accel_cpc2);         /* V/a per phase */
     long   period_cycles = 4 * ramp_cycles;
-    long   temp_every    = (long)lround(1.0 / cyc_s);                  /* 1 s in cycles */
+    long   read_every    = (long)lround(1.0 / cyc_s);                  /* 1 s */
+    long   log_every     = (long)lround(10.0 / cyc_s);                 /* 10 s */
+    long   print_every   = (long)lround(60.0 / cyc_s);                 /* 60 s */
 
     printf("profile: triangle velocity +/-%g rev/s (%.1f rpm) at %g rev/s^2\n",
            speed_rev_s, speed_rev_s * 60.0, accel_rev_s2);
-    printf("         swing per half-cycle %.2f rev | period %.2f s | log every %ld cycle(s)\n",
+    printf("         swing %.2f rev per half-cycle | period %.2f s | read %ld s / log %ld s / print %ld s\n",
            speed_rev_s * speed_rev_s / (2.0 * accel_rev_s2),
-           period_cycles * cyc_s, temp_every);
+           period_cycles * cyc_s, read_every, log_every, print_every);
     if (duration_s > 0)
         printf("         duration %ld s (%.1f min)\n", duration_s, duration_s / 60.0);
     else
         printf("         run until Ctrl-C\n");
+
+    /* open the temperature log */
+    {
+        char logpath[256];
+        time_t now = time(NULL);
+        struct tm lt;
+        localtime_r(&now, &lt);
+        strftime(logpath, sizeof(logpath), "temp_stresstest_%Y%m%d_%H%M%S.csv", &lt);
+        logfile = fopen(logpath, "w");
+        if (!logfile) { printf("WARNING: cannot open log file '%s' — logging disabled\n", logpath); }
+        else { printf("logging to %s\n", logpath); }
+    }
 
     if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) perror("mlockall (continuing)");
     cpu_set_t cpuset; CPU_ZERO(&cpuset); CPU_SET(RT_CPU, &cpuset);
@@ -171,7 +189,7 @@ int main(int argc, char *argv[])
         tx[m] = (A6_TxPDO *)(grp->inputs  + m * sizeof(A6_TxPDO));
     }
 
-    /* relax sync-loss tolerance so the once-per-second SDO read doesn't fault */
+    /* relax sync-loss tolerance so the periodic SDO reads don't fault */
     for (int s = 1; s <= n; s++)
     {
         uint16_t v = 2;  ecx_SDOwrite(&ctx, s, 0x2013, 6,  FALSE, sizeof(v), &v, EC_TIMEOUTSAFE);
@@ -236,14 +254,19 @@ int main(int argc, char *argv[])
         if (!all_enabled)
             printf("enable timeout — some drive never reached operation enabled\n");
         else
-            printf("all %d motor(s) enabled — starting back-and-forth heat run\n", n);
+            printf("all %d motor(s) enabled — heat run started\n", n);
     }
 
-    /* Header */
-    printf("%8s |", "t [s]");
-    for (int m = 0; m < n; m++) printf("  M%d heatsink", m);
-    printf("\n");
+    /* CSV header */
+    if (logfile)
+    {
+        fprintf(logfile, "elapsed_s");
+        for (int m = 0; m < n; m++) fprintf(logfile, ",motor%d_temp_C", m);
+        fprintf(logfile, "\n");
+        fflush(logfile);
+    }
 
+    double last_temp[MAX_MOTORS] = {0};
     long i = 0;
     long total_cycles = (duration_s > 0) ? (long)(duration_s / cyc_s) : 0;
     if (all_enabled)
@@ -289,24 +312,34 @@ int main(int argc, char *argv[])
         }
         ecx_send_processdata(&ctx);
 
-        /* once per second: read + print heatsink temperature */
-        if (i % temp_every == 0)
+        /* temperature read (1 s) → log (10 s) → print (60 s) */
+        if (i % read_every == 0)
         {
-            printf("%8.1f |", i * cyc_s);
             for (int m = 0; m < n; m++)
             {
                 uint32_t raw = 0;
                 if (sdo_read16((uint16_t)(m + 1), 0x2040, 0x31, &raw))
                 {
                     int16_t r = (int16_t)(raw & 0xFFFF);
-                    printf("  %5.1f C", r / 10.0);
-                }
-                else
-                {
-                    printf("  READ FAIL");
+                    last_temp[m] = r / 10.0;
                 }
             }
-            printf("\n");
+
+            if (i % log_every == 0 && logfile)
+            {
+                fprintf(logfile, "%.1f", i * cyc_s);
+                for (int m = 0; m < n; m++) fprintf(logfile, ",%.1f", last_temp[m]);
+                fprintf(logfile, "\n");
+                fflush(logfile);
+            }
+
+            if (i % print_every == 0)
+            {
+                printf("t=%4.0fs |", i * cyc_s);
+                for (int m = 0; m < n; m++) printf(" M%d=%5.1fC", m, last_temp[m]);
+                printf("\n");
+                fflush(stdout);
+            }
         }
 
         i++;
@@ -323,6 +356,7 @@ int main(int argc, char *argv[])
     ecx_statecheck(&ctx, 0, EC_STATE_PRE_OP, EC_TIMEOUTSTATE);
     ctx.slavelist[0].state = EC_STATE_INIT; ecx_writestate(&ctx, 0);
     ecx_close(&ctx);
+    if (logfile) fclose(logfile);
     printf("done.\n");
     return 0;
 }
