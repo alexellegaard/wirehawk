@@ -24,6 +24,7 @@ struct Config {
     double  pos_feedback_gain = 20.0;    // 1/s: position drift correction on top of velocity feedforward
     std::array<int64_t, MAX_MOTORS> counts_offset{};  // per-motor: added to commanded target (spool-zero -> drive-zero calibration)
     std::array<int, MAX_MOTORS> direction{};          // per-motor winding sign: +1 normal, -1 reversed (negates the logical counts)
+    int64_t max_step = 0;                             // counts: max travel a single command may demand from the current position (0 = disabled)
     bool calibrated = false;  // counts_offset set (nonzero) -> trust absolute encoder, disable auto-zero fallback
 };
 

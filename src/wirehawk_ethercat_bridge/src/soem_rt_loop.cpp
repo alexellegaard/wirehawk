@@ -327,6 +327,18 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                     }
                     tgt = (int32_t)((int64_t)target[i] + (g_cfg.calibrated ? 0 : zero_offset[i]));
                 }
+                // Max-step guard: never command a target more than max_step
+                // counts from the current physical position. A wrong
+                // calibration/direction can produce a target ~2x the cable
+                // length away (a runaway wind-in that broke a spool in the
+                // field); clamp any single command to a safe travel.
+                if (g_cfg.max_step > 0) {
+                    int64_t cur = (int64_t)tx[i]->position_actual;
+                    int64_t t64 = (int64_t)tgt;
+                    if (t64 > cur + g_cfg.max_step) t64 = cur + g_cfg.max_step;
+                    if (t64 < cur - g_cfg.max_step) t64 = cur - g_cfg.max_step;
+                    tgt = (int32_t)t64;
+                }
                 step_trapezoid(motion[i], tgt, target_vel[i],
                                g_cfg.max_speed, g_cfg.max_accel,
                                g_cfg.pos_feedback_gain, dt);

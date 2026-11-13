@@ -32,6 +32,7 @@ int main(int argc, char** argv)
     node->declare_parameter("pos_feedback_gain", cfg.pos_feedback_gain);
     node->declare_parameter("counts_offset", std::vector<int64_t>{});
     node->declare_parameter("direction", std::vector<int64_t>{1, 1, 1, 1, 1, 1, 1, 1});
+    node->declare_parameter("max_step", cfg.max_step);
 
     cfg.interface      = node->get_parameter("interface").as_string();
     cfg.cycle_ns       = node->get_parameter("cycle_ns").as_int();
@@ -56,6 +57,7 @@ int main(int argc, char** argv)
         for (size_t i = 0; i < cfg.direction.size(); i++)
             cfg.direction[i] = (i < d.size() && d[i] < 0) ? -1 : 1;
     }
+    cfg.max_step = node->get_parameter("max_step").as_int();
 
     BridgeData data;
 
