@@ -30,8 +30,8 @@ ANCHORS_XY = [                   # from mast_position.py, slave order a0..a3
 
 # --- TCP measurement: fill ONE of these ---
 DISTS_3D = None                  # e.g. [25.7, 24.9, 25.3, 25.1]  (laser, pulley->hawk)
-DISTS_2D = None                  # e.g. [24.9, 25.2, 24.8, 25.4]  (base -> ground proj.)
-TCP_HEIGHT = 1.5                 # hawk height above ground [m] (2D path only)
+DISTS_2D = [11.5, 15.0, 13.7, 18.2]                  # e.g. [24.9, 25.2, 24.8, 25.4]  (base -> ground proj.)
+TCP_HEIGHT = 1.2                 # hawk height above ground [m] (2D path only)
 
 # --- workspace ---
 MARGIN = 1.0                     # inset from the anchor bounding box [m]
