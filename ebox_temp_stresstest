@@ -1,0 +1,201 @@
+vision@vision:~/wirehawk/src/ethercat $ sudo ./a6_temp_stresstest eth0 20 50
+profile: triangle velocity +/-20 rev/s (1200.0 rpm) at 50 rev/s^2
+         swing 4.00 rev per half-cycle | period 1.60 s | read 250 s / log 2500 s / print 15000 s
+         run until Ctrl-C
+logging to temp_stresstest_20261105_091153.csv
+Init on eth0 ... 1 slave(s)
+SAFE_OP reached
+OPERATIONAL reached
+Enabling 1 motor(s)...
+all 1 motor(s) enabled — heat run started
+t=   0s | M0= 24.0C
+t=  60s | M0= 25.0C
+t= 120s | M0= 25.0C
+t= 180s | M0= 25.0C
+t= 240s | M0= 26.0C
+t= 300s | M0= 26.0C
+t= 360s | M0= 26.0C
+t= 420s | M0= 26.0C
+t= 480s | M0= 26.0C
+t= 540s | M0= 26.0C
+t= 600s | M0= 27.0C
+t= 660s | M0= 27.0C
+t= 720s | M0= 27.0C
+t= 780s | M0= 27.0C
+t= 840s | M0= 27.0C
+t= 900s | M0= 27.0C
+t= 960s | M0= 27.0C
+t=1020s | M0= 27.0C
+t=1080s | M0= 28.0C
+t=1140s | M0= 28.0C
+t=1200s | M0= 28.0C
+t=1260s | M0= 28.0C
+t=1320s | M0= 28.0C
+t=1380s | M0= 28.0C
+t=1440s | M0= 28.0C
+t=1500s | M0= 28.0C
+t=1560s | M0= 28.0C
+t=1620s | M0= 28.0C
+t=1680s | M0= 29.0C
+t=1740s | M0= 29.0C
+t=1800s | M0= 29.0C
+t=1860s | M0= 29.0C
+t=1920s | M0= 29.0C
+t=1980s | M0= 29.0C
+t=2040s | M0= 29.0C
+t=2100s | M0= 29.0C
+t=2160s | M0= 29.0C
+t=2220s | M0= 29.0C
+t=2280s | M0= 29.0C
+t=2340s | M0= 29.0C
+t=2400s | M0= 29.0C
+t=2460s | M0= 29.0C
+t=2520s | M0= 29.0C
+t=2580s | M0= 30.0C
+t=2640s | M0= 30.0C
+t=2700s | M0= 30.0C
+t=2760s | M0= 30.0C
+t=2820s | M0= 30.0C
+t=2880s | M0= 30.0C
+t=2940s | M0= 30.0C
+t=3000s | M0= 30.0C
+t=3060s | M0= 30.0C
+t=3120s | M0= 30.0C
+t=3180s | M0= 30.0C
+t=3240s | M0= 30.0C
+t=3300s | M0= 30.0C
+t=3360s | M0= 30.0C
+t=3420s | M0= 30.0C
+t=3480s | M0= 30.0C
+t=3540s | M0= 30.0C
+t=3600s | M0= 30.0C
+t=3660s | M0= 30.0C
+t=3720s | M0= 30.0C
+t=3780s | M0= 30.0C
+t=3840s | M0= 30.0C
+t=3900s | M0= 30.0C
+t=3960s | M0= 30.0C
+t=4020s | M0= 30.0C
+t=4080s | M0= 30.0C
+t=4140s | M0= 30.0C
+t=4200s | M0= 30.0C
+t=4260s | M0= 30.0C
+t=4320s | M0= 30.0C
+t=4380s | M0= 30.0C
+t=4440s | M0= 31.0C
+t=4500s | M0= 31.0C
+t=4560s | M0= 31.0C
+t=4620s | M0= 31.0C
+t=4680s | M0= 31.0C
+t=4740s | M0= 31.0C
+t=4800s | M0= 31.0C
+t=4860s | M0= 31.0C
+t=4920s | M0= 31.0C
+t=4980s | M0= 31.0C
+t=5040s | M0= 31.0C
+t=5100s | M0= 31.0C
+t=5160s | M0= 31.0C
+t=5220s | M0= 31.0C
+t=5280s | M0= 31.0C
+t=5340s | M0= 31.0C
+t=5400s | M0= 31.0C
+t=5460s | M0= 31.0C
+t=5520s | M0= 31.0C
+t=5580s | M0= 31.0C
+t=5640s | M0= 31.0C
+t=5700s | M0= 31.0C
+t=5760s | M0= 31.0C
+t=5820s | M0= 31.0C
+t=5880s | M0= 31.0C
+t=5940s | M0= 31.0C
+t=6000s | M0= 31.0C
+t=6060s | M0= 31.0C
+t=6120s | M0= 31.0C
+t=6180s | M0= 31.0C
+t=6240s | M0= 31.0C
+t=6300s | M0= 31.0C
+t=6360s | M0= 31.0C
+t=6420s | M0= 31.0C
+t=6480s | M0= 31.0C
+t=6540s | M0= 31.0C
+t=6600s | M0= 31.0C
+t=6660s | M0= 31.0C
+t=6720s | M0= 31.0C
+t=6780s | M0= 31.0C
+t=6840s | M0= 31.0C
+t=6900s | M0= 31.0C
+t=6960s | M0= 31.0C
+t=7020s | M0= 31.0C
+t=7080s | M0= 31.0C
+t=7140s | M0= 31.0C
+t=7200s | M0= 31.0C
+t=7260s | M0= 31.0C
+t=7320s | M0= 31.0C
+t=7380s | M0= 31.0C
+t=7440s | M0= 31.0C
+t=7500s | M0= 31.0C
+t=7560s | M0= 31.0C
+t=7620s | M0= 31.0C
+t=7680s | M0= 31.0C
+t=7740s | M0= 31.0C
+t=7800s | M0= 31.0C
+t=7860s | M0= 31.0C
+t=7920s | M0= 31.0C
+t=7980s | M0= 31.0C
+t=8040s | M0= 31.0C
+t=8100s | M0= 31.0C
+t=8160s | M0= 31.0C
+t=8220s | M0= 31.0C
+t=8280s | M0= 31.0C
+t=8340s | M0= 31.0C
+t=8400s | M0= 31.0C
+t=8460s | M0= 31.0C
+t=8520s | M0= 32.0C
+t=8580s | M0= 32.0C
+t=8640s | M0= 32.0C
+t=8700s | M0= 32.0C
+t=8760s | M0= 32.0C
+t=8820s | M0= 32.0C
+t=8880s | M0= 32.0C
+t=8940s | M0= 32.0C
+t=9000s | M0= 32.0C
+t=9060s | M0= 32.0C
+t=9120s | M0= 32.0C
+t=9180s | M0= 32.0C
+t=9240s | M0= 32.0C
+t=9300s | M0= 32.0C
+t=9360s | M0= 32.0C
+t=9420s | M0= 32.0C
+t=9480s | M0= 32.0C
+t=9540s | M0= 32.0C
+t=9600s | M0= 32.0C
+t=9660s | M0= 32.0C
+t=9720s | M0= 31.0C
+t=9780s | M0= 32.0C
+t=9840s | M0= 32.0C
+t=9900s | M0= 32.0C
+t=9960s | M0= 32.0C
+t=10020s | M0= 32.0C
+t=10080s | M0= 31.0C
+t=10140s | M0= 32.0C
+t=10200s | M0= 31.0C
+t=10260s | M0= 31.0C
+t=10320s | M0= 31.0C
+t=10380s | M0= 32.0C
+t=10440s | M0= 31.0C
+t=10500s | M0= 32.0C
+t=10560s | M0= 32.0C
+t=10620s | M0= 32.0C
+t=10680s | M0= 32.0C
+t=10740s | M0= 32.0C
+t=10800s | M0= 32.0C
+^C
+stopping ...
+done.
+vision@vision:~/wirehawk/src/ethercat $ ls
+Makefile                          a6_demo.c     a6_fault.c  a6_inertia.c       a6_reset.c    a6_step_test.c  a6_temp.c                            temp_stresstest_20261105_091153.csv
+README.md                         a6_encoder    a6_gains    a6_profile_test    a6_sdo        a6_sync         a6_temp_stresstest
+STEPPERONLINE_A6_Servo_V0.02.xml  a6_encoder.c  a6_gains.c  a6_profile_test.c  a6_sdo.c      a6_sync.c       a6_temp_stresstest.c
+a6_demo                           a6_fault      a6_inertia  a6_reset           a6_step_test  a6_temp         temp_stresstest_20261105_091137.csv
+vision@vision:~/wirehawk/src/ethercat $ 
+

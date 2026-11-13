@@ -19,3 +19,7 @@ ethercat_bridge:
                                  # v=err/dt form produced on a staircase target.
     counts_offset: [0, 0, 0, 0]     # absolute-encoder calibration = raw - counts(IK(home)). All-zero = uncalibrated,
                                     # so the bridge keeps the auto-zero fallback. Set via scripts/calibrate.py (on the Pi).
+    direction: [1, 1, 1, 1]         # per-motor winding sign: +1 = normal (positive counts = cable winds IN), -1 = reversed.
+                                    # Negates that motor's logical counts on both the command and the feedback, so the
+                                    # controller always sees the "positive = shorter cable" convention. Flip a motor to -1
+                                    # if jogging it the same way unwinds instead of winding. SIM DOESN'T NEED THIS (always forward).

@@ -15,6 +15,7 @@ Requires numpy + pyyaml (the ROS2 control env has both).
 """
 import math
 import os
+import re
 import numpy as np
 
 # ---- CONFIG (edit these) ---------------------------------------------------
@@ -143,6 +144,19 @@ bird_sweeper:
 
     with open(out_path, "w") as f:
         f.write(yaml_text)
+
+    # --- also update the Gazebo world (pillar poses + payload home) so sim == field ---
+    sdf_path = os.path.expanduser(
+        "~/wirehawk/src/wirehawk_gazebo/worlds/wirehawk_world_field.sdf")
+    if os.path.exists(sdf_path):
+        txt = open(sdf_path).read()
+        for i, (x, y) in enumerate(ANCHORS_XY, start=1):
+            txt = re.sub(rf'(<model name="pillar_{i}">\s*<static>true</static>\s*<pose>)[^<]+(</pose>)',
+                         rf'\g<1>{x:.4f} {y:.4f} 1.5 0 0 0\g<2>', txt, count=1, flags=re.S)
+        txt = re.sub(r'(<model name="payload">\s*<pose>)[^<]+(</pose>)',
+                     rf'\g<1>{home[0]:.4f} {home[1]:.4f} {home[2]:.4f} 0 0 0\g<2>', txt, count=1, flags=re.S)
+        open(sdf_path, "w").write(txt)
+        print(f"sdf updated  = {sdf_path}")
 
     print(f"home source = {src}")
     print(f"home        = ({home[0]:.3f}, {home[1]:.3f}, {home[2]:.3f}) m")
