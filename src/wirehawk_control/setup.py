@@ -29,6 +29,7 @@ setup(
             'motor_logger = wirehawk_control.motor_logger:main',
             'bird_sweeper = wirehawk_control.bird_sweeper:main',
             'missionplanner_dummy = wirehawk_control.missionplanner_dummy:main',
+            'motor_direction_check = wirehawk_control.motor_direction_check:main',
         ],
     },
 )
