@@ -23,7 +23,7 @@ ethercat_bridge:
                                     # motor from its current position. Clamps a runaway wind-in from a wrong
                                     # direction/calibration to a safe step. 0 = disabled. Far above normal ~cm steps,
                                     # far below the ~50 m a bad calibration can demand.
-    direction: [1, 1, 1, -1]         # per-motor winding sign: +1 = normal (positive counts = cable winds IN), -1 = reversed.
+    direction: [-1, -1, -1, -1]         # per-motor winding sign: +1 = normal (positive counts = cable winds IN), -1 = reversed.
                                     # Negates that motor's logical counts on both the command and the feedback, so the
                                     # controller always sees the "positive = shorter cable" convention. Flip a motor to -1
                                     # if jogging it the same way unwinds instead of winding. SIM DOESN'T NEED THIS (always forward).
