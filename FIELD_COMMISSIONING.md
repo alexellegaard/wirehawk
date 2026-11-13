@@ -51,6 +51,7 @@ direction: [1, 1, 1, 1]   # set -1 for any motor whose cable winds OUT when the 
 ```
 
 - [ ] The odd motors out are flagged `-1`. (Definitive confirmation comes in Phase 7.)
+- [ ] **2-vs-2 split (no odd one out):** the jog test only gives *relative* direction — it can't say which pair is correct. Guess one pair as `+1`, then let the Phase-7 FK check arbitrate: a wrong direction inverts a cable length and the FK lands **meters** off home (not ±0.3 m). If so, flip *both* motors of that pair and re-launch — no re-calibration needed.
 
 ## Phase 5 — Commit + build
 
@@ -109,6 +110,7 @@ Checks:
 
 1. **FK** — `ros2 topic echo /cdpr/current_pose`
    - [ ] Reads ≈ the measured home (±0.3 m is fine until anchors are re-shot). Way off → anchor order or calibration wrong.
+   - [ ] **This is also the absolute direction check:** if it's *meters* off (not ±0.3 m), a pair of directions is wrong — flip that pair in `direction` and re-launch.
 2. **Direction (definitive)** — command a slow **+z (up)**.
    - [ ] All four cables **shorten**. Any that go slack → flip that `direction` to `-1`, re-commit, re-pull, re-launch.
 3. **Handedness** — nudge **+x**.
