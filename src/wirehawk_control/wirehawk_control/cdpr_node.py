@@ -73,6 +73,7 @@ class CDPRNode(Node):
 
         self.last_cmd_time = self.get_clock().now()
         self.measured_counts = None       # None until the first state/motors arrives
+        self.feedback_valid = False       # True once a sane (non-negative) readback arrives
         self.last_state_time = None
 
         # --- backend interface (relative names so they can be remapped) ---
@@ -98,11 +99,33 @@ class CDPRNode(Node):
 
     def state_cb(self, msg: MotorState):
         # Encoder feedback is the ONLY measurement this controller trusts.
-        self.measured_counts = np.asarray(msg.position, dtype=np.int64)
+        pos = np.asarray(msg.position, dtype=np.int64)
+        if np.any(pos < 0):
+            # Negative logical counts = direction/calibration mismatch (the
+            # bridge publishes (raw - offset) * direction). A wrong offset for a
+            # flipped motor makes this negative, and counts_to_lengths would
+            # raise — previously the timer callback crashed and silently stopped
+            # publishing. Make the hold explicit instead: drop the bad feedback,
+            # stop, and do NOT command motion until the feedback is sane.
+            self.get_logger().warn(
+                f"negative measured counts {pos.tolist()} ignored — "
+                f"direction/calibration mismatch; holding position")
+            self.controller.stop()
+            self.measured_counts = None
+            self.feedback_valid = False
+            self.last_state_time = self.get_clock().now()
+            return
+        self.measured_counts = pos
+        self.feedback_valid = True
         self.last_state_time = self.get_clock().now()
 
     def timer_callback(self):
         now = self.get_clock().now()
+
+        # No valid feedback yet (or a direction/calibration mismatch): do NOT
+        # command motion. The bridge holds the last target — the motors stay put.
+        if not self.feedback_valid:
+            return
 
         # Watchdog: zero velocity if the task input stops (stale /cmd_vel).
         if (now - self.last_cmd_time).nanoseconds / 1e9 > self.cmd_timeout:

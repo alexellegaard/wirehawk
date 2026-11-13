@@ -74,15 +74,30 @@ def main():
 
     home_counts = [length_to_counts(math.dist(a, home), spool) for a in anchors]
     raw = read_raw_positions()
-    offset = [r - c for r, c in zip(raw, home_counts)]
 
+    # Direction-aware offset. The bridge publishes logical = (raw - offset) *
+    # direction (see soem_rt_loop.cpp), so for the logical to read
+    # counts(IK(home)) at home for ANY winding sign the offset must be
+    #     offset = raw - direction * counts(IK(home))
+    # A naive raw - counts(IK(home)) is only right for direction = +1. For a
+    # flipped motor it produces a NEGATIVE feedback count, which
+    # counts_to_lengths rejects — and worse, if it ever gets through, the
+    # controller can command a runaway wind-in (this broke a spool in the field).
     txt = open(BRIDGE_YAML).read()
+    m = re.search(r"direction:\s*\[([^\]]*)\]", txt)
+    direction = ([(-1 if int(x.strip()) < 0 else 1) for x in m.group(1).split(",")]
+                 if m else [1, 1, 1, 1])
+    while len(direction) < 4:
+        direction.append(1)
+    offset = [r - d * c for r, d, c in zip(raw, direction, home_counts)]
+
     txt = re.sub(r"counts_offset:\s*\[[^\]]*\]", f"counts_offset: {offset}", txt, count=1)
     open(BRIDGE_YAML, "w").write(txt)
 
     print(f"world           = {world}")
     print(f"raw (0x6064)    = {raw}")
     print(f"counts(IK(home))= {home_counts}")
+    print(f"direction       = {direction}")
     print(f"counts_offset   = {offset}")
     print(f"written to      = {BRIDGE_YAML}")
     print("(commit + push this file later to persist it past the Pi's pull-only reset)")
