@@ -64,7 +64,7 @@
             <lighting>false</lighting>
             <double_sided>true</double_sided>
             <pbr><metal>
-              <albedo_map>model://wirehawk_gazebo/materials/textures/mast_1.png</albedo_map>
+              <albedo_map>file:///home/alex/wirehawk/src/wirehawk_gazebo/materials/textures/mast_1.png</albedo_map>
               <metalness>0.0</metalness>
               <roughness>1.0</roughness>
             </metal></pbr>
@@ -97,7 +97,7 @@
             <lighting>false</lighting>
             <double_sided>true</double_sided>
             <pbr><metal>
-              <albedo_map>model://wirehawk_gazebo/materials/textures/mast_2.png</albedo_map>
+              <albedo_map>file:///home/alex/wirehawk/src/wirehawk_gazebo/materials/textures/mast_2.png</albedo_map>
               <metalness>0.0</metalness>
               <roughness>1.0</roughness>
             </metal></pbr>
@@ -130,7 +130,7 @@
             <lighting>false</lighting>
             <double_sided>true</double_sided>
             <pbr><metal>
-              <albedo_map>model://wirehawk_gazebo/materials/textures/mast_3.png</albedo_map>
+              <albedo_map>file:///home/alex/wirehawk/src/wirehawk_gazebo/materials/textures/mast_3.png</albedo_map>
               <metalness>0.0</metalness>
               <roughness>1.0</roughness>
             </metal></pbr>
@@ -163,7 +163,7 @@
             <lighting>false</lighting>
             <double_sided>true</double_sided>
             <pbr><metal>
-              <albedo_map>model://wirehawk_gazebo/materials/textures/mast_4.png</albedo_map>
+              <albedo_map>file:///home/alex/wirehawk/src/wirehawk_gazebo/materials/textures/mast_4.png</albedo_map>
               <metalness>0.0</metalness>
               <roughness>1.0</roughness>
             </metal></pbr>
