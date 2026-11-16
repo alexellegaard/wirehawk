@@ -360,6 +360,7 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                 data->actual_position[i] = (int32_t)(((int64_t)tx[i]->position_actual
                                                      - (g_cfg.calibrated ? 0 : zero_offset[i])
                                                      - g_cfg.counts_offset[i]) * g_cfg.direction[i]);
+                data->commanded_target[i] = motion[i].cmd;   // what we actually sent to 0x607A
                 data->actual_torque[i]   = tx[i]->torque_actual;
                 data->status_word[i]     = tx[i]->status_word;
                 data->error_code[i]      = tx[i]->error_code;

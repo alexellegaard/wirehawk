@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Always-on logger capturing three streams to timestamped CSVs:
+"""Always-on logger capturing streams to timestamped CSVs:
 
-  cmd   <- cmd/motors        : the controller's commanded counts (one version)
-  sim   <- sim/state/motors  : the sim bridge's feedback (perfect-tracking echo)
-  real  <- real/state/motors : the real EtherCAT bridge's ACTUAL drive feedback
+  cmd    <- cmd/motors        : the controller's commanded counts (logical)
+  sim    <- sim/state/motors  : the sim bridge's feedback (perfect-tracking echo)
+  real   <- real/state/motors : the real EtherCAT bridge's ACTUAL drive feedback (logical)
+  target <- real/state/motors : the real bridge's commanded 0x607A target (PHYSICAL counts)
+  diag   <- /cdpr/diagnostic  : FK estimate, target, tensions, etc.
 
 Each row: t, pos0, pos1, ...  (seconds + encoder counts per motor).
-Output: <output_dir>/cmd_<stamp>.csv, sim_<stamp>.csv, real_<stamp>.csv.
+Output: <output_dir>/<kind>_<stamp>.csv.
 
-Topic names are parameters (cmd_topic, sim_state_topic, real_state_topic) so the
-exact namespacing can be overridden at launch without editing code.
-
-Run standalone:   ros2 run wirehawk_control motor_logger
+The `target` stream is the missing signal for the field oscillation bug: it shows
+what the bridge actually told the drive, so we can tell a bridge/interpolator
+fault (target oscillates) from a drive-side DCSYNC fault (target flat, drive moves).
 """
 import os
 import csv
@@ -40,10 +41,11 @@ class MotorLogger(Node):
             'cmd':  open(os.path.join(out, f'cmd_{stamp}.csv'),  'w', newline=''),
             'sim':  open(os.path.join(out, f'sim_{stamp}.csv'),  'w', newline=''),
             'real': open(os.path.join(out, f'real_{stamp}.csv'), 'w', newline=''),
+            'target': open(os.path.join(out, f'target_{stamp}.csv'), 'w', newline=''),
             'diag': open(os.path.join(out, f'diag_{stamp}.csv'), 'w', newline=''),
         }
         self.writers = {k: csv.writer(v) for k, v in self.files.items()}
-        self.bufs = {'cmd': [], 'sim': [], 'real': [], 'diag': []}
+        self.bufs = {'cmd': [], 'sim': [], 'real': [], 'target': [], 'diag': []}
         self.t0 = time.monotonic()
 
         self.create_subscription(
@@ -67,7 +69,13 @@ class MotorLogger(Node):
         self.bufs['cmd'].append([time.monotonic() - self.t0] + list(m.position))
 
     def on_state(self, kind, m):
-        self.bufs[kind].append([time.monotonic() - self.t0] + list(m.position))
+        t = time.monotonic() - self.t0
+        self.bufs[kind].append([t] + list(m.position))
+        # The real bridge also publishes the physical target it wrote to 0x607A
+        # (the missing signal that distinguishes a bridge/interpolator fault from
+        # a drive-side DCSYNC fault). Log it alongside, same timestamp.
+        if kind == 'real' and m.target:
+            self.bufs['target'].append([t] + list(m.target))
 
     def on_diag(self, m):
         self.bufs['diag'].append([time.monotonic() - self.t0] + list(m.data))

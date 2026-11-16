@@ -100,6 +100,7 @@ int main(int argc, char** argv)
             std::lock_guard<std::mutex> lk(data.mtx);
             for (int i = 0; i < cfg.num_motors; i++) {
                 msg.position.push_back(data.actual_position[i]);
+                msg.target.push_back(data.commanded_target[i]);
                 msg.torque.push_back(data.actual_torque[i]);
                 msg.status_word.push_back(data.status_word[i]);
                 msg.error_code.push_back(data.error_code[i]);

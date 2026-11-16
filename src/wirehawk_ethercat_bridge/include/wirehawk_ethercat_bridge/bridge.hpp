@@ -40,6 +40,7 @@ struct BridgeData {
 
     // feedback: RT -> ROS2
     std::array<int32_t, MAX_MOTORS> actual_position{};
+    std::array<int32_t, MAX_MOTORS> commanded_target{};  // interpolated target actually written to the drive (0x607A), physical counts
     std::array<int16_t, MAX_MOTORS> actual_torque{};
     std::array<uint16_t, MAX_MOTORS> status_word{};
     std::array<uint16_t, MAX_MOTORS> error_code{};
