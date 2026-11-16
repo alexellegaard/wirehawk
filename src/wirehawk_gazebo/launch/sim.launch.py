@@ -18,6 +18,8 @@ def generate_launch_description():
                               description='World variant: 20x20_3m, 20x20_5m, 40x40_3m, 70x70_3m, 70x70_5m'),
 
         AppendEnvironmentVariable('GZ_SIM_SYSTEM_PLUGIN_PATH', plugin_path),
+        # Resolve model://wirehawk_gazebo/... (label textures) against the install share dir.
+        AppendEnvironmentVariable('GZ_SIM_RESOURCE_PATH', os.path.dirname(pkg_share)),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(

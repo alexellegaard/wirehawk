@@ -25,6 +25,7 @@ install(TARGETS CableCatenaryPlugin DESTINATION lib)
 install(DIRECTORY
   launch
   worlds
+  materials
   DESTINATION share/${PROJECT_NAME}
 )
 
