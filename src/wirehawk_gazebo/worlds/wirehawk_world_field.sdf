@@ -61,6 +61,8 @@
         <visual name="visual">
           <geometry><plane><normal>0 0 1</normal><size>2.0 1.0</size></plane></geometry>
           <material>
+            <lighting>false</lighting>
+            <double_sided>true</double_sided>
             <pbr><metal>
               <albedo_map>model://wirehawk_gazebo/materials/textures/mast_1.png</albedo_map>
               <metalness>0.0</metalness>
@@ -92,6 +94,8 @@
         <visual name="visual">
           <geometry><plane><normal>0 0 1</normal><size>2.0 1.0</size></plane></geometry>
           <material>
+            <lighting>false</lighting>
+            <double_sided>true</double_sided>
             <pbr><metal>
               <albedo_map>model://wirehawk_gazebo/materials/textures/mast_2.png</albedo_map>
               <metalness>0.0</metalness>
@@ -123,6 +127,8 @@
         <visual name="visual">
           <geometry><plane><normal>0 0 1</normal><size>2.0 1.0</size></plane></geometry>
           <material>
+            <lighting>false</lighting>
+            <double_sided>true</double_sided>
             <pbr><metal>
               <albedo_map>model://wirehawk_gazebo/materials/textures/mast_3.png</albedo_map>
               <metalness>0.0</metalness>
@@ -154,6 +160,8 @@
         <visual name="visual">
           <geometry><plane><normal>0 0 1</normal><size>2.0 1.0</size></plane></geometry>
           <material>
+            <lighting>false</lighting>
+            <double_sided>true</double_sided>
             <pbr><metal>
               <albedo_map>model://wirehawk_gazebo/materials/textures/mast_4.png</albedo_map>
               <metalness>0.0</metalness>
