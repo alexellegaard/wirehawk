@@ -53,26 +53,34 @@
         </visual>
       </link>
     </model>
-    <!-- mast_1_label -->
+    <!-- mast 1 label (geometric 7-segment digit) -->
     <model name="mast_1_label">
       <static>true</static>
       <pose>-7.3222 -11.1349 3.6 1.5708 0.0 2.5599</pose>
       <link name="link">
-        <visual name="visual">
-          <geometry><plane><normal>0 0 1</normal><size>2.0 1.0</size></plane></geometry>
-          <material>
-            <lighting>false</lighting>
-            <double_sided>true</double_sided>
-            <pbr><metal>
-              <albedo_map>file:///home/alex/wirehawk/src/wirehawk_gazebo/materials/textures/mast_1.png</albedo_map>
-              <metalness>0.0</metalness>
-              <roughness>1.0</roughness>
-            </metal></pbr>
-          </material>
-          <cast_shadows>false</cast_shadows>
-        </visual>
+    <visual name="tr">
+      <pose>0.75 0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>1.0 0.35 0.35 1</ambient>
+        <diffuse>1.0 0.35 0.35 1</diffuse>
+        <emissive>1.0 0.35 0.35 1</emissive>
+      </material>
+    </visual>
+    <visual name="br">
+      <pose>0.75 -0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>1.0 0.35 0.35 1</ambient>
+        <diffuse>1.0 0.35 0.35 1</diffuse>
+        <emissive>1.0 0.35 0.35 1</emissive>
+      </material>
+    </visual>
       </link>
     </model>
+
 
 
     <!-- Pillar 2 (Bottom Right) -->
@@ -86,26 +94,64 @@
         </visual>
       </link>
     </model>
-    <!-- mast_2_label -->
+    <!-- mast 2 label (geometric 7-segment digit) -->
     <model name="mast_2_label">
       <static>true</static>
       <pose>9.2198 -11.1349 3.6 1.5708 0.0 -2.4500</pose>
       <link name="link">
-        <visual name="visual">
-          <geometry><plane><normal>0 0 1</normal><size>2.0 1.0</size></plane></geometry>
-          <material>
-            <lighting>false</lighting>
-            <double_sided>true</double_sided>
-            <pbr><metal>
-              <albedo_map>file:///home/alex/wirehawk/src/wirehawk_gazebo/materials/textures/mast_2.png</albedo_map>
-              <metalness>0.0</metalness>
-              <roughness>1.0</roughness>
-            </metal></pbr>
-          </material>
-          <cast_shadows>false</cast_shadows>
-        </visual>
+    <visual name="top">
+      <pose>0.0 1.1 0 0 0 0</pose>
+      <geometry><box><size>1.5 0.15 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.88 0.51 1</ambient>
+        <diffuse>0.35 0.88 0.51 1</diffuse>
+        <emissive>0.35 0.88 0.51 1</emissive>
+      </material>
+    </visual>
+    <visual name="tr">
+      <pose>0.75 0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.88 0.51 1</ambient>
+        <diffuse>0.35 0.88 0.51 1</diffuse>
+        <emissive>0.35 0.88 0.51 1</emissive>
+      </material>
+    </visual>
+    <visual name="middle">
+      <pose>0.0 0.0 0 0 0 0</pose>
+      <geometry><box><size>1.5 0.15 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.88 0.51 1</ambient>
+        <diffuse>0.35 0.88 0.51 1</diffuse>
+        <emissive>0.35 0.88 0.51 1</emissive>
+      </material>
+    </visual>
+    <visual name="bl">
+      <pose>-0.75 -0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.88 0.51 1</ambient>
+        <diffuse>0.35 0.88 0.51 1</diffuse>
+        <emissive>0.35 0.88 0.51 1</emissive>
+      </material>
+    </visual>
+    <visual name="bottom">
+      <pose>0.0 -1.1 0 0 0 0</pose>
+      <geometry><box><size>1.5 0.15 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.88 0.51 1</ambient>
+        <diffuse>0.35 0.88 0.51 1</diffuse>
+        <emissive>0.35 0.88 0.51 1</emissive>
+      </material>
+    </visual>
       </link>
     </model>
+
 
 
     <!-- Pillar 3 (Bottom Left) -->
@@ -119,26 +165,64 @@
         </visual>
       </link>
     </model>
-    <!-- mast_3_label -->
+    <!-- mast 3 label (geometric 7-segment digit) -->
     <model name="mast_3_label">
       <static>true</static>
       <pose>9.0137 8.7221 3.6 1.5708 0.0 -0.8018</pose>
       <link name="link">
-        <visual name="visual">
-          <geometry><plane><normal>0 0 1</normal><size>2.0 1.0</size></plane></geometry>
-          <material>
-            <lighting>false</lighting>
-            <double_sided>true</double_sided>
-            <pbr><metal>
-              <albedo_map>file:///home/alex/wirehawk/src/wirehawk_gazebo/materials/textures/mast_3.png</albedo_map>
-              <metalness>0.0</metalness>
-              <roughness>1.0</roughness>
-            </metal></pbr>
-          </material>
-          <cast_shadows>false</cast_shadows>
-        </visual>
+    <visual name="top">
+      <pose>0.0 1.1 0 0 0 0</pose>
+      <geometry><box><size>1.5 0.15 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.59 1.0 1</ambient>
+        <diffuse>0.35 0.59 1.0 1</diffuse>
+        <emissive>0.35 0.59 1.0 1</emissive>
+      </material>
+    </visual>
+    <visual name="tr">
+      <pose>0.75 0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.59 1.0 1</ambient>
+        <diffuse>0.35 0.59 1.0 1</diffuse>
+        <emissive>0.35 0.59 1.0 1</emissive>
+      </material>
+    </visual>
+    <visual name="middle">
+      <pose>0.0 0.0 0 0 0 0</pose>
+      <geometry><box><size>1.5 0.15 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.59 1.0 1</ambient>
+        <diffuse>0.35 0.59 1.0 1</diffuse>
+        <emissive>0.35 0.59 1.0 1</emissive>
+      </material>
+    </visual>
+    <visual name="br">
+      <pose>0.75 -0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.59 1.0 1</ambient>
+        <diffuse>0.35 0.59 1.0 1</diffuse>
+        <emissive>0.35 0.59 1.0 1</emissive>
+      </material>
+    </visual>
+    <visual name="bottom">
+      <pose>0.0 -1.1 0 0 0 0</pose>
+      <geometry><box><size>1.5 0.15 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>0.35 0.59 1.0 1</ambient>
+        <diffuse>0.35 0.59 1.0 1</diffuse>
+        <emissive>0.35 0.59 1.0 1</emissive>
+      </material>
+    </visual>
       </link>
     </model>
+
 
 
     <!-- Pillar 4 (Top Left) -->
@@ -152,26 +236,54 @@
         </visual>
       </link>
     </model>
-    <!-- mast_4_label -->
+    <!-- mast 4 label (geometric 7-segment digit) -->
     <model name="mast_4_label">
       <static>true</static>
       <pose>-10.9113 13.5478 3.6 1.5708 0.0 0.6780</pose>
       <link name="link">
-        <visual name="visual">
-          <geometry><plane><normal>0 0 1</normal><size>2.0 1.0</size></plane></geometry>
-          <material>
-            <lighting>false</lighting>
-            <double_sided>true</double_sided>
-            <pbr><metal>
-              <albedo_map>file:///home/alex/wirehawk/src/wirehawk_gazebo/materials/textures/mast_4.png</albedo_map>
-              <metalness>0.0</metalness>
-              <roughness>1.0</roughness>
-            </metal></pbr>
-          </material>
-          <cast_shadows>false</cast_shadows>
-        </visual>
+    <visual name="tl">
+      <pose>-0.75 0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>1.0 0.71 0.27 1</ambient>
+        <diffuse>1.0 0.71 0.27 1</diffuse>
+        <emissive>1.0 0.71 0.27 1</emissive>
+      </material>
+    </visual>
+    <visual name="tr">
+      <pose>0.75 0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>1.0 0.71 0.27 1</ambient>
+        <diffuse>1.0 0.71 0.27 1</diffuse>
+        <emissive>1.0 0.71 0.27 1</emissive>
+      </material>
+    </visual>
+    <visual name="middle">
+      <pose>0.0 0.0 0 0 0 0</pose>
+      <geometry><box><size>1.5 0.15 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>1.0 0.71 0.27 1</ambient>
+        <diffuse>1.0 0.71 0.27 1</diffuse>
+        <emissive>1.0 0.71 0.27 1</emissive>
+      </material>
+    </visual>
+    <visual name="br">
+      <pose>0.75 -0.55 0 0 0 0</pose>
+      <geometry><box><size>0.15 1.1 0.1</size></box></geometry>
+      <material>
+        <lighting>false</lighting>
+        <ambient>1.0 0.71 0.27 1</ambient>
+        <diffuse>1.0 0.71 0.27 1</diffuse>
+        <emissive>1.0 0.71 0.27 1</emissive>
+      </material>
+    </visual>
       </link>
     </model>
+
 
 
     <!-- 4 Visual Cable Models: Length 32m -->
