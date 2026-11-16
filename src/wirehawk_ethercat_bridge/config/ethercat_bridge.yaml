@@ -23,6 +23,10 @@ ethercat_bridge:
                                     # motor from its current position. Clamps a runaway wind-in from a wrong
                                     # direction/calibration to a safe step. 0 = disabled. Far above normal ~cm steps,
                                     # far below the ~50 m a bad calibration can demand.
+    max_following_error: 1000000    # counts (~0.48 m): watchdog. If a drive's actual position strays this far from its
+                                    # commanded target, the bridge disables ALL motors and latches until restart. Normal
+                                    # following error is ~42k counts at max speed; the field oscillation moved drives
+                                    # 4-9 m (8-19M counts). 0 = disabled.
     direction: [-1, -1, -1, -1]         # per-motor winding sign: +1 = normal (positive counts = cable winds IN), -1 = reversed.
                                     # Negates that motor's logical counts on both the command and the feedback, so the
                                     # controller always sees the "positive = shorter cable" convention. Flip a motor to -1

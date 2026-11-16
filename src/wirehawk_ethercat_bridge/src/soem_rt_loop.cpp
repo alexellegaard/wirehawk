@@ -233,6 +233,11 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
     // ---- motion state init (hold current position) ----
     MotionState motion[MAX_MOTORS];
     bool fault_reset[MAX_MOTORS] = {false};
+    // Following-error watchdog latch: once any drive strays from its target by
+    // more than max_following_error, all motors are disabled and stay latched
+    // until the bridge is restarted (the field oscillation moved drives 4-9 m
+    // off-target; this stops that the instant it begins).
+    bool watchdog_tripped = false;
     // Auto-zero (uncalibrated fallback): on enable, latch raw-logical so the
     // first streamed target maps onto the current position (no startup slew).
     // Disabled once counts_offset is calibrated (nonzero) — the absolute
@@ -297,6 +302,13 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
             uint16_t sw = tx[i]->status_word;
             uint16_t state = sw & 0x006F;
 
+            // Watchdog latched: keep every motor disabled (voltage off).
+            if (watchdog_tripped) {
+                rx[i]->control_word = 0x0000;
+                all_enabled = false;
+                continue;
+            }
+
             if (sw & 0x0008) {                       // fault -> toggle reset bit
                 fault_reset[i] = !fault_reset[i];
                 rx[i]->control_word = fault_reset[i] ? 0x0080 : 0x0000;
@@ -342,6 +354,18 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                 step_trapezoid(motion[i], tgt, target_vel[i],
                                g_cfg.max_speed, g_cfg.max_accel,
                                g_cfg.pos_feedback_gain, dt);
+                // Following-error watchdog: if the drive has strayed far from
+                // the target, it is NOT following (DCSYNC/EtherCAT glitch, or a
+                // runaway interpolator). Disable all motors and latch.
+                {
+                    int64_t fe = (int64_t)tx[i]->position_actual - (int64_t)motion[i].cmd;
+                    if (g_cfg.max_following_error > 0 &&
+                        (fe > g_cfg.max_following_error || fe < -g_cfg.max_following_error)) {
+                        watchdog_tripped = true;
+                        printf("RT: WATCHDOG motor %d following error %lld > %lld counts — DISABLING ALL MOTORS\n",
+                               i, (long long)fe, (long long)g_cfg.max_following_error);
+                    }
+                }
                 rx[i]->target_position = motion[i].cmd;
                 rx[i]->control_word = 0x000F;
             } else {
