@@ -86,7 +86,7 @@
     <!-- Pillar 2 (Bottom Right) -->
     <model name="pillar_2">
       <static>true</static>
-      <pose>9.2198 -11.1349 1.5 0 0 0</pose>
+      <pose>-10.9113 13.5478 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -97,7 +97,7 @@
     <!-- mast 2 label (geometric 7-segment digit) -->
     <model name="mast_2_label">
       <static>true</static>
-      <pose>9.2198 -11.1349 3.6 1.5708 0.0 -2.4500</pose>
+      <pose>-10.9113 13.5478 3.6 1.5708 0.0 0.6780</pose>
       <link name="link">
     <visual name="top">
       <pose>0.0 1.1 0 0 0 0</pose>
@@ -228,7 +228,7 @@
     <!-- Pillar 4 (Top Left) -->
     <model name="pillar_4">
       <static>true</static>
-      <pose>-10.9113 13.5478 1.5 0 0 0</pose>
+      <pose>9.2198 -11.1349 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -239,7 +239,7 @@
     <!-- mast 4 label (geometric 7-segment digit) -->
     <model name="mast_4_label">
       <static>true</static>
-      <pose>-10.9113 13.5478 3.6 1.5708 0.0 0.6780</pose>
+      <pose>9.2198 -11.1349 3.6 1.5708 0.0 -2.4500</pose>
       <link name="link">
     <visual name="tl">
       <pose>-0.75 0.55 0 0 0 0</pose>
