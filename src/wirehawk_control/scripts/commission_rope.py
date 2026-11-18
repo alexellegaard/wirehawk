@@ -17,9 +17,12 @@ Procedure (masts in ANY order):
 
 Run on the Pi (EtherCAT master):  python3 commission_rope.py <world>
 
+Dependencies are the same as calibrate.py (stdlib + pyyaml) so it runs on the
+Pi's bare python3 — no numpy needed.
+
 MAST_RUN below is the ONE physical constant you set once: the fixed cable
-length from the winch drum to the top pulley, per motor [m] (~3-5 m). It fixes
-the drum layer for the counts->length mapping; +/-0.5 m is plenty.
+length from the winch drum to the top pulley [m] (~3 m). It fixes the drum
+layer for the counts->length mapping; +/-0.5 m is plenty.
 """
 import math
 import os
@@ -29,7 +32,6 @@ import sys
 import termios
 import tty
 
-import numpy as np
 import yaml
 
 REPO = os.path.expanduser("~/wirehawk")
@@ -88,23 +90,55 @@ def counts_to_length(counts, spec):
 
 
 # --- geometric FK (least-squares trilateration — the controller's own fallback) ---
+def _solve3(a, b):
+    """Gaussian elimination with partial pivoting (3x3)."""
+    M = [a[i][:] + [b[i]] for i in range(3)]
+    for col in range(3):
+        piv = max(range(col, 3), key=lambda r: abs(M[r][col]))
+        if abs(M[piv][col]) < 1e-12:
+            raise ValueError("singular normal equations")
+        M[col], M[piv] = M[piv], M[col]
+        for r in range(col + 1, 3):
+            f = M[r][col] / M[col][col]
+            for c in range(col, 4):
+                M[r][c] -= f * M[col][c]
+    x = [0.0] * 3
+    for r in range(2, -1, -1):
+        x[r] = (M[r][3] - sum(M[r][c] * x[c] for c in range(r + 1, 3))) / M[r][r]
+    return x
+
+
 def geometric_fk(anchors, lengths, P_init):
-    P = np.array(P_init, dtype=float)
+    P = [float(P_init[0]), float(P_init[1]), float(P_init[2])]
     for _ in range(50):
-        d = anchors - P
-        C = np.linalg.norm(d, axis=1)
-        C = np.maximum(C, 1e-9)
-        u = d / C[:, None]
-        r = C - lengths
-        J = -u
-        JtJ = J.T @ J
-        Jtr = J.T @ r
+        r = [0.0] * 4
+        J = [[0.0] * 3 for _ in range(4)]
+        for i in range(4):
+            dx = P[0] - anchors[i][0]
+            dy = P[1] - anchors[i][1]
+            dz = P[2] - anchors[i][2]
+            C = math.sqrt(dx * dx + dy * dy + dz * dz)
+            C = max(C, 1e-9)
+            r[i] = C - lengths[i]
+            J[i][0] = dx / C
+            J[i][1] = dy / C
+            J[i][2] = dz / C
+        # normal equations J^T J dP = -J^T r
+        A = [[0.0] * 3 for _ in range(3)]
+        g = [0.0] * 3
+        for i in range(4):
+            for a in range(3):
+                g[a] += J[i][a] * r[i]
+                for b in range(3):
+                    A[a][b] += J[i][a] * J[i][b]
         try:
-            dP = np.linalg.solve(JtJ, -Jtr)
-        except np.linalg.LinAlgError:
+            dP = _solve3(A, [-g[0], -g[1], -g[2]])
+        except ValueError:
             break
-        P = P + dP
-        if np.linalg.norm(dP) < 1e-9:
+        P[0] += dP[0]
+        P[1] += dP[1]
+        P[2] += dP[2]
+        if math.sqrt(dP[0] ** 2 + dP[1] ** 2 + dP[2] ** 2) < 1e-9:
             break
     return P
 
@@ -148,9 +182,8 @@ def main():
     cfg_path = os.path.join(REPO, "src", "wirehawk_control", "config",
                             f"cdpr_params_{world}.yaml")
     params = yaml.safe_load(open(cfg_path))["cdpr_node"]["ros__parameters"]
-    anchors = np.array(
-        [params["anchors"][i:i + 3] for i in range(0, len(params["anchors"]), 3)],
-        dtype=float)
+    flat = params["anchors"]
+    anchors = [flat[i:i + 3] for i in range(0, len(flat), 3)]
     spool = yaml.safe_load(open(
         os.path.join(REPO, "src", "wirehawk_spool", "config", "spool.yaml")))[
         "spool"]
@@ -193,11 +226,10 @@ def main():
         print(f"  mast {i + 1}: zero={zeros[i]}  tcp={tcp[i]}  "
               f"dC={tcp[i] - zeros[i]:+d}  free span = {L:.3f} m")
 
-    lengths = np.array(lengths)
-    P_init = np.array(params["start_position"], dtype=float)
+    P_init = params["start_position"]
     home = geometric_fk(anchors, lengths, P_init)
-    print(f"\nfree spans = {np.round(lengths, 3)}")
-    print(f"home TCP   = {np.round(home, 4)}")
+    print(f"\nfree spans = {[round(x, 3) for x in lengths]}")
+    print(f"home TCP   = {[round(x, 4) for x in home]}")
 
     txt = open(cfg_path).read()
     txt = re.sub(r"start_position:\s*\[[^\]]*\]",
