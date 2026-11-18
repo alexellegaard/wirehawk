@@ -21,17 +21,19 @@ import numpy as np
 # ---- CONFIG (edit these) ---------------------------------------------------
 WORLD = "field"                  # output: cdpr_params_<WORLD>.yaml
 PULLEY_Z = 3.0                   # anchor/top-pulley height [m]
-ANCHORS_XY = [                   # from mast_position.py, slave order a0..a3
+ANCHORS_XY = [                   # from mast_position.py, SLAVE order a0..a3 (CW daisy-chain)
     (-7.3222, -11.1349),         # a0 = mast 1 = slave 1
-    (9.2198,  -11.1349),         # a1 = mast 2 = slave 2
+    (-10.9113, 13.5478),         # a1 = mast 4 = slave 2
     (9.0137,   8.7221),          # a2 = mast 3 = slave 3
-    (-10.9113, 13.5478),         # a3 = mast 4 = slave 4
+    (9.2198,  -11.1349),         # a3 = mast 2 = slave 4
 ]
 
-# --- TCP measurement: fill ONE of these ---
+# --- TCP measurement: fill ONE of these, or neither (rope method measures it) ---
 DISTS_3D = None                  # e.g. [25.7, 24.9, 25.3, 25.1]  (laser, pulley->hawk)
-DISTS_2D = [11.5, 15.0, 13.7, 18.2]                  # e.g. [24.9, 25.2, 24.8, 25.4]  (base -> ground proj.)
+DISTS_2D = None                  # e.g. [24.9, 25.2, 24.8, 25.4]  (base -> ground proj.)
 TCP_HEIGHT = 1.2                 # hawk height above ground [m] (2D path only)
+# With DISTS_3D = DISTS_2D = None the home is a centroid placeholder; the real
+# home is then measured by commission_rope.py (rope-as-tape-measure).
 
 # --- workspace ---
 MARGIN = 1.0                     # inset from the anchor bounding box [m]
