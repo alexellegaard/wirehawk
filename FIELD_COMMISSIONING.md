@@ -103,22 +103,37 @@ Battery sanity (optional): power-cycle one drive and re-read to confirm the mult
 cd ~/wirehawk/src/ethercat && sudo ./a6_encoder eth0
 ```
 
-### A7. Transfer the calibration + build
+### A7. Commit + build (Pi pushes, laptop pulls)
 
-The Pi **cannot push** to GitHub (auth failed). Pull the two generated YAMLs to the laptop and commit there instead:
+One-time setup — give the Pi push access via SSH key (do once, on the Pi):
+
+```bash
+ssh-keygen -t ed25519 -C "vision-pi" -f ~/.ssh/id_ed25519 -N ""
+cat ~/.ssh/id_ed25519.pub        # copy this whole line
+```
+
+Paste the key on GitHub (Settings → SSH and GPG keys → New SSH key), then on the Pi:
+
+```bash
+git remote set-url origin git@github.com:alexellegaard/wirehawk.git
+ssh -T git@github.com            # expect: "Hi alexellegaard! You've successfully authenticated"
+```
+
+Every calibration now ends with a normal git push:
+
+Pi:
+
+```bash
+cd ~/wirehawk && git add -A && git commit -m "field calibration: home + offset" && git push origin control-bridge-integration
+```
 
 Laptop:
 
 ```bash
-scp vision@vision.local:~/wirehawk/src/wirehawk_control/config/cdpr_params_field.yaml ~/wirehawk/src/wirehawk_control/config/
-scp vision@vision.local:~/wirehawk/src/wirehawk_ethercat_bridge/config/ethercat_bridge.yaml ~/wirehawk/src/wirehawk_ethercat_bridge/config/
-cd ~/wirehawk && git add -A && git commit -m "field calibration: home + offset" && git push
-source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_control wirehawk_gazebo
+cd ~/wirehawk && git pull && source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_control wirehawk_gazebo
 ```
 
-- [ ] `start_position` and `counts_offset` now live in the repo (committed + pushed from the laptop).
-
-*(Long-term: put an SSH key on the Pi so it can push directly and the scp step goes away.)*
+- [ ] `start_position` and `counts_offset` now live in the repo (committed + pushed from the Pi).
 
 ### A8. Launch + verify
 
@@ -177,7 +192,7 @@ ros2 run wirehawk_control keyboard_teleop --ros-args --params-file ~/wirehawk/in
 2. **No abrupt motions** — gentle ramped commands only. A hard step command can destroy a spool.
 3. **E-stop** cuts power to everything (motion stops + brakes engage). It is the hard stop.
 4. **Known gap:** the brakes are currently released by 24 V straight from the PSU (not via the drive), so a *drive* fault does not engage the brake — the bridge's following-error watchdog disables torque but not the brake. Do not couple the TCP until the brake relay is re-wired to the drive's fault output.
-5. **Pi can't push** — anything `calibrate.py` / `commission_rope.py` writes on the Pi (YAML) must be pulled to the laptop (A7 `scp`) and committed there, or the next `git reset --hard` wipes it.
+5. **Pi must push** — anything `calibrate.py` / `commission_rope.py` writes on the Pi (YAML) must be committed + pushed (A7) before the next `git reset --hard`, or it's wiped. If push fails with "Authentication failed", the Pi's SSH key isn't set up yet (A7 one-time step).
 6. **Never move the hawk** between A5 (rope home) and A6 (offset), or the offset is wrong.
 7. **Schema version handshake** — the bridge publishes `/wirehawk/schema_version`; the controller refuses to command motion on a mismatch. If you see "schema mismatch" in the controller log, the Pi's `wirehawk_msgs` is stale — rebuild it (A3). A stale schema makes every feedback message deserialize to garbage, so the controller runs blind and the drives can move unwatched (this broke a spool).
 
