@@ -44,6 +44,12 @@ BRIDGE_YAML = os.path.join(
 # is ~16 cm per metre of error, so +/-0.5 m is plenty for a rough calibration.
 MAST_RUN = 3.0
 
+# --- physical mast number -> EtherCAT slave index. The anchors array is in SLAVE
+# order (a0=mast1, a1=mast4, a2=mast3, a3=mast2 — the CW daisy-chain), NOT physical
+# mast order. You press the PHYSICAL mast number (1-4); this maps it to the slave
+# whose encoder/anchor it belongs to. Update if you re-wire the daisy-chain.
+MAST_TO_SLAVE = [0, 3, 2, 1]   # mast1->slave0, mast2->slave3, mast3->slave2, mast4->slave1
+
 
 # --- spool model (inlined from wirehawk_spool/spool_model.py — keep in sync) ---
 def _layer_circumference(spec, layer):
@@ -197,12 +203,13 @@ def main():
     while len(zeros) < 4:
         ch = getch()
         if ch in "1234":
-            i = int(ch) - 1
-            c = read_raw_positions()[i]
-            zeros[i] = c
-            done = ",".join(str(n + 1) for n in sorted(zeros))
-            todo = ",".join(str(n + 1) for n in range(4) if n not in zeros)
-            print(f"mast {ch} zero recorded = {c}   (done: {done}; left: {todo})")
+            mast = int(ch)
+            slave = MAST_TO_SLAVE[mast - 1]
+            c = read_raw_positions()[slave]
+            zeros[mast] = c
+            done = ",".join(str(n) for n in sorted(zeros))
+            todo = ",".join(str(n) for n in range(1, 5) if n not in zeros)
+            print(f"mast {mast} zero recorded = {c}   (done: {done}; left: {todo})")
         else:
             print(f"(ignored {ch!r} — press a mast number 1-4)")
 
@@ -217,19 +224,31 @@ def main():
         print(f"(waiting for ENTER, ignored {ch!r})")
 
     tcp = read_raw_positions()
-    lengths = []
+    lengths = [None] * 4
     print("\nmeasured free spans:")
-    for i in range(4):
-        dC_logical = (tcp[i] - zeros[i]) * direction[i]
+    for mast in range(1, 5):
+        slave = MAST_TO_SLAVE[mast - 1]
+        dC_logical = (tcp[slave] - zeros[mast]) * direction[slave]
         L = counts_to_length(dC_logical + length_to_counts(MAST_RUN, spool), spool) - MAST_RUN
-        lengths.append(L)
-        print(f"  mast {i + 1}: zero={zeros[i]}  tcp={tcp[i]}  "
-              f"dC={tcp[i] - zeros[i]:+d}  free span = {L:.3f} m")
+        lengths[slave] = L
+        print(f"  mast {mast} (slave {slave + 1}): zero={zeros[mast]}  tcp={tcp[slave]}  "
+              f"dC={tcp[slave] - zeros[mast]:+d}  free span = {L:.3f} m")
 
     P_init = params["start_position"]
     home = geometric_fk(anchors, lengths, P_init)
     print(f"\nfree spans = {[round(x, 3) for x in lengths]}")
     print(f"home TCP   = {[round(x, 4) for x in home]}")
+    # Safety gate: the TCP must sit BELOW the pulleys (z=3.0 m). A home with
+    # z outside the workspace band means the spans are inconsistent (wrong mast
+    # number, wrong MAST_RUN, or a bad zero) — and writing it would produce a
+    # bad counts_offset and a runaway motor. Refuse to write.
+    if not (0.3 <= home[2] <= 2.7):
+        print(f"\n!! REJECTED: home z = {home[2]:.3f} m is outside the workspace band 0.3-2.7 m")
+        print(f"   The pulleys are at 3.0 m, so this is physically impossible — the")
+        print(f"   calibration is wrong. Check: mast numbers (MAST_TO_SLAVE), MAST_RUN,")
+        print(f"   and that each zero was taken with the rope end exactly at the pulley.")
+        print(f"   NOT writing start_position. Fix and re-run.")
+        sys.exit(1)
 
     txt = open(cfg_path).read()
     txt = re.sub(r"start_position:\s*\[[^\]]*\]",
