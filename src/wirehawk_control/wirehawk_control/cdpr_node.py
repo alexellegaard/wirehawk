@@ -3,12 +3,18 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, PoseStamped
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, UInt32
 from wirehawk_msgs.msg import MotorCommand, MotorState
 from ament_index_python.packages import get_package_share_directory
 
 from wirehawk_control.controller import CDPRController
 from wirehawk_spool.spool_model import load_spec
+
+# MotorState schema version — must match wirehawk_ethercat_bridge bridge.hpp::
+# kSchemaVersion. Bump BOTH together whenever MotorState.msg changes. A mismatch
+# means the Pi's wirehawk_msgs is stale: its MotorState deserializes to garbage
+# and the controller would run blind (field spool break).
+SCHEMA_VERSION = 2
 
 
 class CDPRNode(Node):
@@ -81,6 +87,12 @@ class CDPRNode(Node):
         self.state_sub = self.create_subscription(
             MotorState, 'state/motors', self.state_cb, 10)
 
+        # Schema-version check on a STABLE std_msgs type: readable even when the
+        # MotorState schema is mismatched. Refuse to command motion on mismatch.
+        self.schema_mismatch = False
+        self.schema_sub = self.create_subscription(
+            UInt32, '/wirehawk/schema_version', self.schema_cb, 10)
+
         # --- task input + diagnostic (legacy names, kept for teleop/planner) ---
         self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_cb, 10)
         self.pose_pub = self.create_publisher(PoseStamped, '/cdpr/current_pose', 10)
@@ -96,6 +108,18 @@ class CDPRNode(Node):
         self.controller.set_target_velocity([
             msg.linear.x, msg.linear.y, msg.linear.z])
         self.last_cmd_time = self.get_clock().now()
+
+    def schema_cb(self, msg):
+        if msg.data != SCHEMA_VERSION and not self.schema_mismatch:
+            self.get_logger().fatal(
+                f"MotorState schema mismatch: bridge reports v{msg.data}, this "
+                f"controller expects v{SCHEMA_VERSION}. The Pi's wirehawk_msgs "
+                f"is stale — rebuild it (colcon build --packages-select "
+                f"wirehawk_msgs wirehawk_ethercat_bridge). REFUSING to command motion.")
+            self.schema_mismatch = True
+            self.controller.stop()
+        elif msg.data == SCHEMA_VERSION:
+            self.schema_mismatch = False
 
     def state_cb(self, msg: MotorState):
         # Encoder feedback is the ONLY measurement this controller trusts.
@@ -120,6 +144,10 @@ class CDPRNode(Node):
 
     def timer_callback(self):
         now = self.get_clock().now()
+
+        # Schema mismatch: never command motion (the controller would be blind).
+        if self.schema_mismatch:
+            return
 
         # Negative feedback (direction/calibration mismatch): do NOT command
         # motion. The bridge holds the last target — the motors stay put.

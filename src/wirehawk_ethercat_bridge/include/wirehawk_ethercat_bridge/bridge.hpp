@@ -10,6 +10,14 @@ namespace wirehawk_bridge {
 // Hard cap on the fixed-size arrays. The active count is Config::num_motors.
 constexpr int MAX_MOTORS = 8;
 
+// Schema version of wirehawk_msgs/msg/MotorState. Bump this AND
+// cdpr_node.py::SCHEMA_VERSION together whenever MotorState.msg changes. The
+// bridge publishes it on /wirehawk/schema_version (a std_msgs type, so it stays
+// readable even when MotorState itself is mismatched) and the controller refuses
+// to command motion on a mismatch — a stale Pi's MotorState otherwise
+// deserializes to garbage and the controller runs blind (field spool break).
+constexpr uint32_t kSchemaVersion = 2;
+
 // Bridge configuration, populated from ROS parameters (single source of truth
 // in the yaml launch file — no hardcoded values here beyond safe defaults that
 // only apply when a param is absent).

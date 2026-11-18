@@ -51,7 +51,7 @@ cd ~/wirehawk && git add -A && git commit -m "field calibration: anchors" && git
 Pi (pull-only):
 
 ```bash
-cd ~/wirehawk && git fetch origin && git reset --hard origin/control-bridge-integration && git clean -fdx src/ethercat && make -C src/ethercat && source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_ethercat_bridge
+cd ~/wirehawk && git fetch origin && git reset --hard origin/control-bridge-integration && git clean -fdx src/ethercat && make -C src/ethercat && source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_msgs wirehawk_ethercat_bridge
 ```
 
 ### A4. Motor direction check — FIRST SETUP ONLY (skip if already known)
@@ -103,19 +103,22 @@ Battery sanity (optional): power-cycle one drive and re-read to confirm the mult
 cd ~/wirehawk/src/ethercat && sudo ./a6_encoder eth0
 ```
 
-### A7. Commit, build
+### A7. Transfer the calibration + build
 
-Pi:
-
-```bash
-cd ~/wirehawk && git add -A && git commit -m "field calibration: home + offset" && git push
-```
+The Pi **cannot push** to GitHub (auth failed). Pull the two generated YAMLs to the laptop and commit there instead:
 
 Laptop:
 
 ```bash
-cd ~/wirehawk && git pull && source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_control wirehawk_gazebo
+scp vision@vision.local:~/wirehawk/src/wirehawk_control/config/cdpr_params_field.yaml ~/wirehawk/src/wirehawk_control/config/
+scp vision@vision.local:~/wirehawk/src/wirehawk_ethercat_bridge/config/ethercat_bridge.yaml ~/wirehawk/src/wirehawk_ethercat_bridge/config/
+cd ~/wirehawk && git add -A && git commit -m "field calibration: home + offset" && git push
+source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_control wirehawk_gazebo
 ```
+
+- [ ] `start_position` and `counts_offset` now live in the repo (committed + pushed from the laptop).
+
+*(Long-term: put an SSH key on the Pi so it can push directly and the scp step goes away.)*
 
 ### A8. Launch + verify
 
@@ -174,8 +177,9 @@ ros2 run wirehawk_control keyboard_teleop --ros-args --params-file ~/wirehawk/in
 2. **No abrupt motions** — gentle ramped commands only. A hard step command can destroy a spool.
 3. **E-stop** cuts power to everything (motion stops + brakes engage). It is the hard stop.
 4. **Known gap:** the brakes are currently released by 24 V straight from the PSU (not via the drive), so a *drive* fault does not engage the brake — the bridge's following-error watchdog disables torque but not the brake. Do not couple the TCP until the brake relay is re-wired to the drive's fault output.
-5. **Pi is pull-only** — anything `calibrate.py` / `commission_rope.py` writes on the Pi (YAML) must be committed + pushed to survive the next `git reset --hard`.
+5. **Pi can't push** — anything `calibrate.py` / `commission_rope.py` writes on the Pi (YAML) must be pulled to the laptop (A7 `scp`) and committed there, or the next `git reset --hard` wipes it.
 6. **Never move the hawk** between A5 (rope home) and A6 (offset), or the offset is wrong.
+7. **Schema version handshake** — the bridge publishes `/wirehawk/schema_version`; the controller refuses to command motion on a mismatch. If you see "schema mismatch" in the controller log, the Pi's `wirehawk_msgs` is stale — rebuild it (A3). A stale schema makes every feedback message deserialize to garbage, so the controller runs blind and the drives can move unwatched (this broke a spool).
 
 ---
 
@@ -202,5 +206,5 @@ ros2 run wirehawk_control keyboard_teleop --ros-args --params-file ~/wirehawk/in
 | Start bridge | `sudo -E bash -c 'source /opt/ros/jazzy/setup.bash && source ~/wirehawk/install/setup.bash && ros2 run wirehawk_ethercat_bridge ethercat_bridge_node --ros-args -r state/motors:=real/state/motors --params-file ~/wirehawk/src/wirehawk_ethercat_bridge/config/ethercat_bridge.yaml'` (Pi) |
 | Start controller | `ros2 launch wirehawk_control cdpr.launch.py world:=field backend:=real` (laptop) |
 | Teleop (WASD) | `ros2 run wirehawk_control keyboard_teleop --ros-args --params-file ~/wirehawk/install/wirehawk_control/share/wirehawk_control/config/cdpr_params_field.yaml` (laptop) |
-| Pi pull (deploy) | `cd ~/wirehawk && git fetch origin && git reset --hard origin/control-bridge-integration && git clean -fdx src/ethercat && make -C src/ethercat && source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_ethercat_bridge` (Pi) |
+| Pi pull (deploy) | `cd ~/wirehawk && git fetch origin && git reset --hard origin/control-bridge-integration && git clean -fdx src/ethercat && make -C src/ethercat && source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_msgs wirehawk_ethercat_bridge` (Pi) |
 | Laptop build | `cd ~/wirehawk && source /opt/ros/jazzy/setup.bash && colcon build --packages-select wirehawk_control wirehawk_gazebo` (laptop) |

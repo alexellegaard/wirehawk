@@ -5,6 +5,7 @@
 #include "wirehawk_ethercat_bridge/bridge.hpp"
 #include "wirehawk_msgs/msg/motor_command.hpp"
 #include "wirehawk_msgs/msg/motor_state.hpp"
+#include "std_msgs/msg/u_int32.hpp"
 
 #include <rclcpp/rclcpp.hpp>
 #include <algorithm>
@@ -68,6 +69,16 @@ int main(int argc, char** argv)
 
     // ---- publishers / subscribers ----
     auto state_pub = node->create_publisher<wirehawk_msgs::msg::MotorState>("state/motors", 10);
+
+    // Schema-version heartbeat on a STABLE std_msgs type: readable even when the
+    // MotorState schema is mismatched (the controller checks it and refuses to
+    // command if it disagrees — see bridge.hpp::kSchemaVersion).
+    auto schema_pub = node->create_publisher<std_msgs::msg::UInt32>("/wirehawk/schema_version", 10);
+    auto schema_timer = node->create_wall_timer(std::chrono::seconds(1), [&]() {
+        std_msgs::msg::UInt32 v;
+        v.data = wirehawk_bridge::kSchemaVersion;
+        schema_pub->publish(v);
+    });
 
     auto cmd_sub = node->create_subscription<wirehawk_msgs::msg::MotorCommand>(
         "cmd/motors", 10,
