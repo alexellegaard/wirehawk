@@ -23,7 +23,7 @@ from rclpy.node import Node
 
 from wirehawk_msgs.msg import MotorCommand, MotorState
 
-DELTA = 1000000       # ~0.48 m on the first layer (within the bridge's 5M max_step)
+DELTA = 0.5           # ~0.5 m free-span jog (within the bridge's 5M max_step)
 HOLD_S = 4            # seconds to watch the rope while it winds in
 NUM_MOTORS = 4
 
@@ -37,11 +37,11 @@ class DirectionCheck(Node):
         self.current = None
 
     def state_cb(self, msg):
-        self.current = np.asarray(msg.position, dtype=np.int64)
+        self.current = np.asarray(msg.position, dtype=float)
 
     def send(self, pos):
         m = MotorCommand()
-        m.position = [int(p) for p in pos]
+        m.position = [float(p) for p in pos]
         self.cmd_pub.publish(m)
 
     def wait_current(self, timeout=8.0):
@@ -56,10 +56,10 @@ class DirectionCheck(Node):
                 'no state/motors received — is the bridge running and remapped correctly?')
             return
         base = self.current.copy()
-        self.get_logger().info(f'start (logical) counts = {base.tolist()}')
+        self.get_logger().info(f'start free-span = {base.tolist()}')
         for i in range(NUM_MOTORS):
             self.get_logger().info(
-                f'=== motor {i} (mast {i + 1}): command +{DELTA} counts = wind IN ===')
+                f'=== motor {i} (mast {i + 1}): command +{DELTA} m = wind IN ===')
             target = base.copy()
             target[i] += DELTA
             self.send(target)

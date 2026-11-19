@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Always-on logger capturing streams to timestamped CSVs:
 
-  cmd    <- cmd/motors        : the controller's commanded counts (logical)
+  cmd    <- cmd/motors        : the controller's commanded free-span lengths [m]
   sim    <- sim/state/motors  : the sim bridge's feedback (perfect-tracking echo)
-  real   <- real/state/motors : the real EtherCAT bridge's ACTUAL drive feedback (logical)
-  target <- real/state/motors : the real bridge's commanded 0x607A target (PHYSICAL counts)
+  real   <- real/state/motors : the real EtherCAT bridge's ACTUAL drive feedback (free span)
+  target <- real/state/motors : the real bridge's commanded target (free span)
   diag   <- /cdpr/diagnostic  : FK estimate, target, tensions, etc.
 
-Each row: t, pos0, pos1, ...  (seconds + encoder counts per motor).
+Each row: t, pos0, pos1, ...  (seconds + free-span length [m] per motor).
 Output: <output_dir>/<kind>_<stamp>.csv.
 
 The `target` stream is the missing signal for the field oscillation bug: it shows

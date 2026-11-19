@@ -31,7 +31,14 @@ int main(int argc, char** argv)
     node->declare_parameter("max_speed",     cfg.max_speed);
     node->declare_parameter("max_accel",     cfg.max_accel);
     node->declare_parameter("pos_feedback_gain", cfg.pos_feedback_gain);
-    node->declare_parameter("counts_offset", std::vector<int64_t>{});
+    node->declare_parameter("gear_ratio",    cfg.gear_ratio);
+    node->declare_parameter("mast_run",      cfg.mast_run);
+    node->declare_parameter("spool_total_m", cfg.spool.total_m);
+    node->declare_parameter("spool_core_d_m", cfg.spool.core_d_m);
+    node->declare_parameter("spool_rope_d_m", cfg.spool.rope_d_m);
+    node->declare_parameter("spool_turns_per_layer", cfg.spool.turns_per_layer);
+    node->declare_parameter("spool_max_layers", cfg.spool.max_layers);
+    node->declare_parameter("zero_ticks", std::vector<int64_t>{0, 0, 0, 0, 0, 0, 0, 0});
     node->declare_parameter("direction", std::vector<int64_t>{1, 1, 1, 1, 1, 1, 1, 1});
     node->declare_parameter("max_step", cfg.max_step);
     node->declare_parameter("max_following_error", cfg.max_following_error);
@@ -44,15 +51,17 @@ int main(int argc, char** argv)
     cfg.max_speed      = node->get_parameter("max_speed").as_double();
     cfg.max_accel      = node->get_parameter("max_accel").as_double();
     cfg.pos_feedback_gain = node->get_parameter("pos_feedback_gain").as_double();
+    cfg.gear_ratio     = node->get_parameter("gear_ratio").as_double();
+    cfg.mast_run       = node->get_parameter("mast_run").as_double();
+    cfg.spool.total_m  = node->get_parameter("spool_total_m").as_double();
+    cfg.spool.core_d_m = node->get_parameter("spool_core_d_m").as_double();
+    cfg.spool.rope_d_m = node->get_parameter("spool_rope_d_m").as_double();
+    cfg.spool.turns_per_layer = node->get_parameter("spool_turns_per_layer").as_int();
+    cfg.spool.max_layers = node->get_parameter("spool_max_layers").as_int();
     {
-        auto co = node->get_parameter("counts_offset").as_integer_array();
-        for (size_t i = 0; i < co.size() && i < cfg.counts_offset.size(); i++)
-            cfg.counts_offset[i] = co[i];
-        // calibrated = any nonzero offset (all-zero is the uncalibrated default,
-        // which keeps the auto-zero safety fallback active in the RT loop).
-        cfg.calibrated = false;
-        for (size_t i = 0; i < cfg.counts_offset.size(); i++)
-            if (cfg.counts_offset[i] != 0) { cfg.calibrated = true; break; }
+        auto z = node->get_parameter("zero_ticks").as_integer_array();
+        for (size_t i = 0; i < cfg.zero_ticks.size(); i++)
+            cfg.zero_ticks[i] = (i < z.size()) ? (int32_t)z[i] : 0;
     }
     {
         auto d = node->get_parameter("direction").as_integer_array();
@@ -95,7 +104,8 @@ int main(int argc, char** argv)
             std::lock_guard<std::mutex> lk(data.mtx);
             int n = std::min<int>(msg->position.size(), cfg.num_motors);
             for (int i = 0; i < n; i++) {
-                int32_t p = (int32_t)((int64_t)msg->position[i] * cfg.direction[i] + cfg.counts_offset[i]);
+                // free span [m] -> raw 0x607A target (spool model + zero + mast_run)
+                int32_t p = wirehawk_bridge::free_span_to_raw((double)msg->position[i], i, cfg);
                 if (has_last && dt > 1e-6)
                     data.target_velocity[i] = (double)(p - last_pos[i]) / dt;
                 last_pos[i] = p;
@@ -112,8 +122,9 @@ int main(int argc, char** argv)
         {
             std::lock_guard<std::mutex> lk(data.mtx);
             for (int i = 0; i < cfg.num_motors; i++) {
-                msg.position.push_back(data.actual_position[i]);
-                msg.target.push_back(data.commanded_target[i]);
+                // raw 0x6064 -> free span [m] (spool model + zero + mast_run)
+                msg.position.push_back((float)wirehawk_bridge::raw_to_free_span(data.actual_position[i], i, cfg));
+                msg.target.push_back((float)wirehawk_bridge::raw_to_free_span(data.commanded_target[i], i, cfg));
                 msg.torque.push_back(data.actual_torque[i]);
                 msg.status_word.push_back(data.status_word[i]);
                 msg.error_code.push_back(data.error_code[i]);

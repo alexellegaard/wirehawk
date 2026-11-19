@@ -1,6 +1,8 @@
-# Winch/spool geometry — single source of truth for the encoder-counts <-> cable-length
-# conversion. Shared by wirehawk_control (command + FK feedback) and wirehawk_gazebo_bridge
-# (sim physics), so the two sides cannot disagree on the mapping.
+# Winch/spool geometry — the encoder-counts <-> cable-length conversion.
+# NOTE: the conversion now lives in the C++ bridge (wirehawk_ethercat_bridge
+# bridge.hpp::SpoolSpec + spool_* params), which is the authoritative consumer.
+# This yaml remains the single source of truth for the VALUES; keep bridge.hpp
+# and this file in sync (the tests below still exercise the Python port).
 spool:
   total_m: 65.0            # cable inventory per winch [m]
   core_d_m: 0.020          # drum core diameter [m]  (PENDING DECISION: 0.020 core vs V2's 0.018 groove-floor / 0.020 cable-centre)

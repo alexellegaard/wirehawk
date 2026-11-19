@@ -1,33 +1,31 @@
-import os
 import numpy as np
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, PoseStamped
 from std_msgs.msg import Float64MultiArray, UInt32
 from wirehawk_msgs.msg import MotorCommand, MotorState
-from ament_index_python.packages import get_package_share_directory
 
 from wirehawk_control.controller import CDPRController
-from wirehawk_spool.spool_model import load_spec
 
 # MotorState schema version — must match wirehawk_ethercat_bridge bridge.hpp::
 # kSchemaVersion. Bump BOTH together whenever MotorState.msg changes. A mismatch
 # means the Pi's wirehawk_msgs is stale: its MotorState deserializes to garbage
 # and the controller would run blind (field spool break).
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 class CDPRNode(Node):
     """The backend-agnostic CDPR controller node.
 
     Task input:     /cmd_vel (Twist)            — from teleop or trajectory planner
-    Backend output:  cmd/motors (MotorCommand)  — target encoder counts
-    Backend input:   state/motors (MotorState)  — measured encoder counts
-    Diagnostic:      /cdpr/current_pose         — FK position estimate (from counts)
+    Backend output:  cmd/motors (MotorCommand)  — target free-span lengths [m]
+    Backend input:   state/motors (MotorState)  — measured free-span lengths [m]
+    Diagnostic:      /cdpr/current_pose         — FK position estimate (from lengths)
 
-    It never puts cable lengths on the wire and never reads ground-truth pose.
-    Whether `state/motors` comes from the real EtherCAT bridge or the Gazebo
-    bridge is decided by which backend is running — this node is agnostic.
+    It never reads ground-truth pose. Whether `state/motors` comes from the real
+    EtherCAT bridge or the Gazebo bridge is decided by which backend is running —
+    this node is agnostic. The raw-encoder <-> free-span conversion lives in the
+    bridge.
     """
     def __init__(self):
         super().__init__('cdpr_node')
@@ -56,11 +54,6 @@ class CDPRNode(Node):
         self.dt = 1.0 / rate_hz
         self.cmd_timeout = float(self.get_parameter('cmd_timeout').value)
 
-        # --- spool geometry (single source of truth: wirehawk_spool config) ---
-        spool_yaml = os.path.join(
-            get_package_share_directory('wirehawk_spool'), 'config', 'spool.yaml')
-        spec = load_spec(spool_yaml)
-
         self.controller = CDPRController(
             anchors=np.array(raw_anchors, dtype=float).reshape(-1, 3),
             start_pos=np.array(self.get_parameter('start_position').value, dtype=float),
@@ -74,12 +67,11 @@ class CDPRNode(Node):
             fk_gain=float(self.get_parameter('fk_gain').value),
             max_cable_speed=float(self.get_parameter('max_cable_speed').value),
             max_cable_accel=float(self.get_parameter('max_cable_accel').value),
-            spec=spec,
         )
 
         self.last_cmd_time = self.get_clock().now()
-        self.measured_counts = None       # None until the first state/motors arrives
-        self.feedback_invalid = False     # True while readback has negative counts (direction/calibration mismatch)
+        self.measured_lengths = None      # None until the first state/motors arrives
+        self.feedback_invalid = False     # True while readback has negative free span (bridge zero/mast_run mismatch)
         self.last_state_time = None
 
         # --- backend interface (relative names so they can be remapped) ---
@@ -100,7 +92,7 @@ class CDPRNode(Node):
 
         self.timer = self.create_timer(self.dt, self.timer_callback)
         self.get_logger().info(
-            f"CDPR Node (counts interface): WS {self.controller.ws_min.tolist()} to "
+            f"CDPR Node (free-span interface): WS {self.controller.ws_min.tolist()} to "
             f"{self.controller.ws_max.tolist()} | EA={self.controller.EA} N, "
             f"mass={self.controller.mass} kg, gain={self.controller.fk_gain} 1/s")
 
@@ -122,23 +114,21 @@ class CDPRNode(Node):
             self.schema_mismatch = False
 
     def state_cb(self, msg: MotorState):
-        # Encoder feedback is the ONLY measurement this controller trusts.
-        pos = np.asarray(msg.position, dtype=np.int64)
-        if np.any(pos < 0):
-            # Negative logical counts = direction/calibration mismatch (the
-            # bridge publishes (raw - offset) * direction). A wrong offset for a
-            # flipped motor makes this negative, and counts_to_lengths would
-            # raise inside step(). Drop the bad feedback and hold: publish
-            # nothing, so the bridge keeps the last (safe) target.
+        # Free-span feedback (metres) is the ONLY measurement this controller trusts.
+        lengths = np.asarray(msg.position, dtype=float)
+        if np.any(lengths < 0):
+            # Negative free span = bridge zero/mast_run mismatch. Drop the bad
+            # feedback and hold: publish nothing, so the bridge keeps the last
+            # (safe) target.
             self.get_logger().warn(
-                f"negative measured counts {pos.tolist()} ignored — "
-                f"direction/calibration mismatch; holding position")
+                f"negative free span {lengths.tolist()} ignored — "
+                f"bridge zero/mast_run mismatch; holding position")
             self.controller.stop()
-            self.measured_counts = None
+            self.measured_lengths = None
             self.feedback_invalid = True
             self.last_state_time = self.get_clock().now()
             return
-        self.measured_counts = pos
+        self.measured_lengths = lengths
         self.feedback_invalid = False
         self.last_state_time = self.get_clock().now()
 
@@ -158,12 +148,12 @@ class CDPRNode(Node):
         if (now - self.last_cmd_time).nanoseconds / 1e9 > self.cmd_timeout:
             self.controller.stop()
 
-        counts = self.controller.step(self.dt, self.measured_counts)
+        lengths = self.controller.step(self.dt, self.measured_lengths)
 
         cmd = MotorCommand()
         cmd.header.stamp = now.to_msg()
         cmd.ctrl_word = 0                       # reserved; lifecycle not wired yet
-        cmd.position = [int(c) for c in counts]
+        cmd.position = [float(l) for l in lengths]
         self.cmd_pub.publish(cmd)
 
         pose = PoseStamped()

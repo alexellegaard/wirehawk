@@ -1,13 +1,14 @@
 """Backend-agnostic CDPR controller core (pure numpy, no ROS).
 
-Converts a task-space velocity target into per-winch encoder-count commands and
-reconstructs the payload pose from *measured* encoder counts via elastic forward
-kinematics. It talks only in encoder counts to the outside world, so it never
-knows whether those counts came from the real EtherCAT bridge or the Gazebo
-bridge — the backend is chosen by which process publishes `state/motors` and
-subscribes `cmd/motors`.
+Converts a task-space velocity target into per-winch free-span cable-length
+commands and reconstructs the payload pose from *measured* free spans via forward
+kinematics. It talks only in free-span metres (anchor/pulley -> TCP) to the
+outside world, so it never knows whether those lengths came from the real
+EtherCAT bridge or the Gazebo bridge — the backend is chosen by which process
+publishes `state/motors` and subscribes `cmd/motors`. The raw-encoder -> free-span
+conversion lives entirely in the bridge.
 
-Fidelity: this controller reads only what a real sensor gives (encoder counts).
+Fidelity: this controller reads only what a real sensor gives (cable lengths).
 It never reads ground-truth Cartesian pose; position is reconstructed by FK.
 Cable axial stretch is modelled in the FK (EA), matching the catenary plugin.
 """
@@ -15,13 +16,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from wirehawk_spool.spool_model import WinchSpec, counts_to_lengths, lengths_to_counts
 from .kinematics import CDPRKinematics
 
 
 class CDPRController:
     def __init__(self, anchors, start_pos, ws_min, ws_max, max_speed, max_accel, max_decel,
-                 EA, mass, fk_gain, max_cable_speed, max_cable_accel, spec: WinchSpec):
+                 EA, mass, fk_gain, max_cable_speed, max_cable_accel):
         self.kinematics = CDPRKinematics(np.asarray(anchors, dtype=float))
         self.start_pos = np.asarray(start_pos, dtype=float)
         self.ws_min = np.asarray(ws_min, dtype=float)
@@ -34,26 +34,25 @@ class CDPRController:
         self.EA = float(EA)
         self.mass = float(mass)
         self.fk_gain = float(fk_gain)
-        self.max_cable_speed = float(max_cable_speed)
-        self.max_cable_accel = float(max_cable_accel)
-        self.spec = spec
+        self.max_cable_speed = float(max_cable_speed)   # m/s (free span)
+        self.max_cable_accel = float(max_cable_accel)   # m/s^2
 
         self.target_pos = np.clip(self.start_pos, self.ws_min, self.ws_max)
         self.target_vel = np.zeros(3, dtype=float)
         self.filtered_vel = np.zeros(3, dtype=float)
         self.P_est = self.target_pos.copy()
-        # Nominal measured length until the first encoder readback arrives.
+        # Nominal measured length until the first feedback readback arrives.
         self.L_m = self.kinematics.compute_commanded_lengths(self.target_pos)
         self.L_integral = np.zeros(self.kinematics.num_cables, dtype=float)
         self.fk_converged = True
         self.tensions = np.zeros(self.kinematics.num_cables, dtype=float)
-        self.command_counts = lengths_to_counts(self.L_m, self.spec)
-        self.command_vel = np.zeros(self.kinematics.num_cables, dtype=float)
+        self.command_lengths = self.L_m.copy()          # free-span [m]
+        self.command_vel = np.zeros(self.kinematics.num_cables, dtype=float)  # m/s
         self.command_was_clamped = np.zeros(self.kinematics.num_cables, dtype=bool)
         # Resume state: latch the actual pose on startup instead of commanding
-        # home. `resumed` flips once the first encoder readback seeds the
-        # command; `target_latched` flips once the FK converges and the target
-        # is latched to the estimated pose.
+        # home. `resumed` flips once the first readback seeds the command;
+        # `target_latched` flips once the FK converges and the target is latched
+        # to the estimated pose.
         self.resumed = False
         self.target_latched = False
 
@@ -65,11 +64,11 @@ class CDPRController:
     def stop(self) -> None:
         self.target_vel = np.zeros(3, dtype=float)
 
-    def step(self, dt: float, measured_counts) -> np.ndarray:
-        """Advance one control step; returns the commanded encoder counts.
+    def step(self, dt: float, measured_lengths) -> np.ndarray:
+        """Advance one control step; returns the commanded free-span lengths [m].
 
-        measured_counts: int array of per-winch encoder positions, or None if
-        no feedback has arrived yet (then the last known length is reused).
+        measured_lengths: float array of per-winch free spans (anchor->TCP), or
+        None if no feedback has arrived yet (then the last known length is reused).
         """
         # 1. Asymmetric slew-rate limiter: snappy acceleration (max_accel),
         #    gentle braking/reversal (max_decel). Overshoot happens only on
@@ -88,29 +87,33 @@ class CDPRController:
         # 2. Integrate velocity -> target position with a soft workspace
         #    boundary: brake each axis only as it approaches an edge, using the
         #    constant-acceleration stopping distance v <= sqrt(2*a*d). The clamp
-        #    is ONE-SIDED per axis: moving away from a boundary is never limited
-        #    (a symmetric clip would pin the TCP at the edge and trap it).
+        #    is ONE-SIDED per axis: moving away from a boundary is never limited.
         d_upper = np.maximum(self.ws_max - self.target_pos, 0.0)
         d_lower = np.maximum(self.target_pos - self.ws_min, 0.0)
-        vmax_upper = np.sqrt(2.0 * self.max_decel * d_upper)   # brake toward ws_max
-        vmax_lower = np.sqrt(2.0 * self.max_decel * d_lower)   # brake toward ws_min
-        vel = np.minimum(self.filtered_vel, vmax_upper)        # brake the +axis approach
-        vel = np.maximum(vel, -vmax_lower)                     # brake the -axis approach
+        vmax_upper = np.sqrt(2.0 * self.max_decel * d_upper)
+        vmax_lower = np.sqrt(2.0 * self.max_decel * d_lower)
+        vel = np.minimum(self.filtered_vel, vmax_upper)
+        vel = np.maximum(vel, -vmax_lower)
         self.target_pos += vel * dt
         self.target_pos = np.clip(self.target_pos, self.ws_min, self.ws_max)
 
-        # 3. Measured cable lengths from encoder counts (the only feedback).
-        if measured_counts is not None:
-            self.L_m = counts_to_lengths(measured_counts, self.spec)
+        # 3. Measured cable lengths (free span, metres) — the only feedback.
+        if measured_lengths is not None:
+            self.L_m = np.asarray(measured_lengths, dtype=float)
             if not self.resumed:
-                # Resume: seed the command to the actual encoder position so
-                # the controller holds wherever the cables are (no home slew).
-                self.command_counts = measured_counts.astype(np.int64).copy()
+                # Resume: seed the command to the actual lengths so the
+                # controller holds wherever the cables are (no home slew).
+                self.command_lengths = self.L_m.copy()
                 self.resumed = True
 
-        # 4. Elastic FK from MEASURED lengths (not the commanded ones).
-        self.P_est, self.fk_converged = self.kinematics.elastic_forward_kinematics(
-            self.L_m, self.EA, self.mass, self.P_est)
+        # 4. FK from MEASURED lengths (not the commanded ones). Startup uses the
+        #    robust subset trilateration (no initial guess, slack-tolerant); once
+        #    latched, the static-equilibrium (elastic) FK refines the pose.
+        if self.resumed and not self.target_latched:
+            self.P_est, self.fk_converged = self.kinematics.taut_subset_fk(self.L_m)
+        else:
+            self.P_est, self.fk_converged = self.kinematics.static_equilibrium_fk(
+                self.L_m, self.EA, self.mass, self.P_est)
         self.P_est = np.clip(self.P_est, self.ws_min, self.ws_max)
 
         # 4b. Cable tensions at the FK estimate — the slack indicator for
@@ -124,7 +127,7 @@ class CDPRController:
         # resume normal control from there.
         if self.resumed and not self.target_latched:
             if not self.fk_converged:
-                return self.command_counts
+                return self.command_lengths
             self.target_pos = self.P_est.copy()
             self.target_latched = True
 
@@ -134,62 +137,50 @@ class CDPRController:
         # 6. Integral length feedback (compensates stretch / steady-state error).
         u = self.kinematics.anchor_unit_vectors(self.P_est)
         proj = u @ e
-        # Anti-windup: if a motor's command was rate-limited (slew-rate clamp
-        # binding) last step, its position error is a transient the drive is
-        # still catching up on — hold the integral instead of accumulating it,
-        # otherwise it winds up and overshoots. The ±0.5 m bound is a safety
-        # clamp; the real cable-stretch correction is ~0.006 m.
-        #
-        # Convergence gate: under fast motion the elastic FK finds no static
-        # equilibrium and falls back to the geometric estimate, so the position
-        # error is a fallback-jump artifact. Freeze the integral then rather
-        # than winding it up on a bad estimate.
+        # Anti-windup: if a motor's command was rate-limited last step, its
+        # position error is a transient the drive is still catching up on — hold
+        # the integral. The ±0.5 m bound is a safety clamp. Convergence gate:
+        # under fast motion the elastic FK finds no static equilibrium and falls
+        # back to the geometric estimate, so the position error is a
+        # fallback-jump artifact — freeze the integral then.
         freeze = not self.fk_converged
         self.L_integral -= np.where(self.command_was_clamped | freeze, 0.0,
                                     self.fk_gain * proj * dt)
         # Null-space projection: 4 cables drive 3 DOF, so L_integral has a
-        # redundant-cable component (null space of u^T) that shifts tension
-        # without moving the payload and drifts uncorrected. Keep only the
-        # position-relevant part (least-squares projection onto the cable
-        # direction vectors u).
+        # redundant-cable component that drifts uncorrected. Keep only the
+        # position-relevant part (least-squares projection onto u).
         coeffs = np.linalg.lstsq(u, self.L_integral, rcond=None)[0]
         self.L_integral = u @ coeffs
         self.L_integral = np.clip(self.L_integral, -0.5, 0.5)
 
         # 7. Commanded lengths = geometric IK + accumulated correction.
         L_ff = self.kinematics.compute_commanded_lengths(self.target_pos)
-        L_d = np.clip(L_ff + self.L_integral, 0.1, self.spec.total_m)
+        L_d = np.clip(L_ff + self.L_integral, 0.05, 60.0)
 
-        # 8. Commanded encoder counts, with a per-motor cable-speed clamp so the
-        #    commanded drum rate never exceeds the drive's rated speed. The real
-        #    EtherCAT bridge enforces the same limit (max_speed), so sim and
-        #    real stay identical.
-        new_counts = lengths_to_counts(L_d, self.spec)
-        desired_vel = (new_counts - self.command_counts) / dt
+        # 8. Commanded free spans, with a per-cable speed clamp so the commanded
+        #    drum rate never exceeds the task cable-speed limit. The real bridge
+        #    enforces the drive's own limit (max_speed), so sim and real agree.
+        desired_vel = (L_d - self.command_lengths) / dt
         max_dv = self.max_cable_accel * dt
         accel_clamped = np.abs(desired_vel - self.command_vel) > max_dv
         self.command_vel += np.clip(desired_vel - self.command_vel, -max_dv, max_dv)
         # Uniform speed clamp: if ANY cable would exceed max_cable_speed, scale
         # ALL cable velocities by the same factor so the fastest just hits the
-        # limit. Cable velocity is the linear projection of the TCP velocity
-        # (v = J·ṗ), so uniform scaling preserves the task-space direction
-        # exactly — the old per-motor np.clip distorted it (broke the length
-        # ratios and bent the TCP path). Also flag it for the integral
-        # anti-windup (the drive lags a speed-limited command, so hold L_integral).
+        # limit (preserves task-space direction).
         max_v = float(np.max(np.abs(self.command_vel)))
         speed_clamped = max_v > self.max_cable_speed
         if speed_clamped:
             self.command_vel *= self.max_cable_speed / max_v
         self.command_was_clamped = accel_clamped | speed_clamped
-        self.command_counts = self.command_counts + np.rint(self.command_vel * dt).astype(np.int64)
-        return self.command_counts
+        self.command_lengths = self.command_lengths + self.command_vel * dt
+        return self.command_lengths
 
     def snapshot(self) -> dict:
         """Observable state for telemetry/debug (no ground truth leaks back in)."""
         return {
-            'position': self.P_est.copy(),          # FK estimate (from counts)
+            'position': self.P_est.copy(),          # FK estimate (from lengths)
             'target': self.target_pos.copy(),
             'measured_lengths': self.L_m.copy(),
             'tensions': self.tensions.copy(),
-            'command_counts': self.command_counts.copy(),
+            'command_lengths': self.command_lengths.copy(),
         }
