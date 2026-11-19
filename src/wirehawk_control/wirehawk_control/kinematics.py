@@ -149,6 +149,12 @@ class CDPRKinematics:
         if converged and np.linalg.norm(P - P_init) > max_jump:
             converged = False
 
+        # Reject physically impossible roots: the payload can't sit above the
+        # highest pulley or below the ground. The Newton can converge to an
+        # above-pulley equilibrium for mutually inconsistent (loose) lengths.
+        if converged and (P[2] > float(self.anchors[:, 2].max()) or P[2] < 0.0):
+            converged = False
+
         if not converged:
             # A slack cable has zero tension, so the elastic force balance has no
             # unique equilibrium (ill-conditioned Newton). Fall back to the ROBUST

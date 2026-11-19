@@ -127,13 +127,19 @@ class CDPRController:
         # hangs from fewer cables and the FK loses observability).
         self.tensions = self.kinematics.cable_tensions(self.P_est, self.L_m, self.EA)
 
-        # Resume startup: until the FK has converged on the measured lengths,
-        # hold the seeded command in place (trust lengths -> infer pose -> hold,
-        # no motion). Once converged, latch the target to the estimated pose and
-        # resume normal control from there.
+        # Hold the winches whenever the FK is invalid (unphysical pose) — at
+        # startup OR after the lengths drift post-latch. Without this, the
+        # feedforward IK(target_pos) keeps driving the cables toward a phantom
+        # pose (e.g. releasing rope toward a clipped above-ceiling pose). Re-seed
+        # the command to the measured lengths so the winches stay put.
+        if not self.fk_converged:
+            self.command_lengths = self.L_m.copy()
+            self.command_vel = np.zeros(self.kinematics.num_cables, dtype=float)
+            return self.command_lengths
+
+        # Resume startup: the FK has converged (guaranteed here), so latch the
+        # target to the estimated pose and resume normal control from there.
         if self.resumed and not self.target_latched:
-            if not self.fk_converged:
-                return self.command_lengths
             self.target_pos = self.P_est.copy()
             self.target_latched = True
 
