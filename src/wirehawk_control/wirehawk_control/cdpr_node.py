@@ -45,6 +45,7 @@ class CDPRNode(Node):
         self.declare_parameter('cable_axial_stiffness', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('payload_mass', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('fk_gain', rclpy.Parameter.Type.DOUBLE)
+        self.declare_parameter('tcp_attachment_length', 0.0)
 
         raw_anchors = self.get_parameter('anchors').value
         if not raw_anchors or len(raw_anchors) % 3 != 0:
@@ -53,6 +54,10 @@ class CDPRNode(Node):
         rate_hz = float(self.get_parameter('rate_hz').value)
         self.dt = 1.0 / rate_hz
         self.cmd_timeout = float(self.get_parameter('cmd_timeout').value)
+        # Elastic band between the rope end and the TCP: the bridge reports
+        # anchor->rope-end length, but the FK/IK work in anchor->TCP. Add it on
+        # feedback, subtract it on command.
+        self.tcp_attachment_length = float(self.get_parameter('tcp_attachment_length').value)
 
         self.controller = CDPRController(
             anchors=np.array(raw_anchors, dtype=float).reshape(-1, 3),
@@ -128,7 +133,7 @@ class CDPRNode(Node):
             self.feedback_invalid = True
             self.last_state_time = self.get_clock().now()
             return
-        self.measured_lengths = lengths
+        self.measured_lengths = lengths + self.tcp_attachment_length
         self.feedback_invalid = False
         self.last_state_time = self.get_clock().now()
 
@@ -153,7 +158,7 @@ class CDPRNode(Node):
         cmd = MotorCommand()
         cmd.header.stamp = now.to_msg()
         cmd.ctrl_word = 0                       # reserved; lifecycle not wired yet
-        cmd.position = [float(l) for l in lengths]
+        cmd.position = [float(l) - self.tcp_attachment_length for l in lengths]
         self.cmd_pub.publish(cmd)
 
         pose = PoseStamped()
