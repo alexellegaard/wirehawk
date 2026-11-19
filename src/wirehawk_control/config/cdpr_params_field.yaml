@@ -23,7 +23,7 @@ cdpr_node:
     cmd_timeout: 0.2
     cable_axial_stiffness: 98100.0
     payload_mass: 0.1             # actual hawk mass (~100 g). Was 3.0 — a heavy-payload assumption made the elastic FK hang the TCP too low
-    tcp_attachment_length: 1.0   # [m] elastic band between the rope end and the TCP. The bridge reports
+    tcp_attachment_length: 0.5   # [m] elastic band between the rope end and the TCP. The bridge reports
                                  # anchor->rope-end length; the FK needs anchor->TCP, so this is added.
     fk_gain: 0.5
 
