@@ -188,5 +188,8 @@ class CDPRKinematics:
                     best_z = P[2]
         if best is not None:
             return best, True
-        # no consistent subset -> degrade to least-squares over all cables
-        return self.trilateration(lengths, P_init), False
+        # No consistent 3-cable subset: the measured lengths are mutually
+        # inconsistent (two or more slack cables, or a hardware fault). Do NOT
+        # degrade to the full least-squares — it averages the inconsistency into
+        # a wrong pose. Return the seed unconverged so the controller holds.
+        return np.array(P_init, dtype=float), False

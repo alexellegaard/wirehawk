@@ -114,6 +114,12 @@ class CDPRController:
         else:
             self.P_est, self.fk_converged = self.kinematics.static_equilibrium_fk(
                 self.L_m, self.EA, self.mass, self.P_est)
+        # Reject an unphysical FK pose (outside the workspace — e.g. below the
+        # floor from miscalibrated lengths) instead of clipping it into the
+        # workspace and latching to the clipped phantom pose. Holding is the
+        # safe fallback: the TCP stays put until the FK reads a plausible pose.
+        if np.any(self.P_est < self.ws_min) or np.any(self.P_est > self.ws_max):
+            self.fk_converged = False
         self.P_est = np.clip(self.P_est, self.ws_min, self.ws_max)
 
         # 4b. Cable tensions at the FK estimate — the slack indicator for
