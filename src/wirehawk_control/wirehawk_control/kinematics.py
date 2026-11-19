@@ -150,7 +150,13 @@ class CDPRKinematics:
             converged = False
 
         if not converged:
-            P = self.trilateration(lengths, P_init)
+            # A slack cable has zero tension, so the elastic force balance has no
+            # unique equilibrium (ill-conditioned Newton). Fall back to the ROBUST
+            # subset trilateration, which ignores the slack cable — NOT the full
+            # least-squares, which averages the slack in and lands ~1 m off
+            # (below floor). Return its validity flag (True = a consistent taut
+            # subset was found).
+            P, converged = self.taut_subset_fk(lengths, P_init)
 
         return P, converged
 
