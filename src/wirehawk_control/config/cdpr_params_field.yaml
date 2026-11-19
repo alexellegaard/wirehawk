@@ -1,3 +1,11 @@
+# =====================================================================
+# DEBUG SAFETY LIMITS (temporarily lowered for hold-then-slow-move integration).
+# PRODUCTION values to restore when debugging is done:
+#   cdpr_node: linear_speed 5.0, linear_accel 3.0, linear_decel 2.0,
+#              cable_speed 6.0, cable_accel 4.0
+#   trajectory_planner: linear_speed 5.0, linear_accel 3.0
+#   keyboard_teleop:    linear_speed 5.0, linear_accel 4.0
+# =====================================================================
 # Wirehawk control params — world: field (field, non-square quadrilateral)
 # Anchors in slave order (a0=mast1=slave1 ... a3=mast4=slave4), z = top-pulley height.
 cdpr_node:
@@ -6,11 +14,11 @@ cdpr_node:
     start_position: [-1.0966, -1.1147, 1.2000]
     workspace_min: [-9.9113, -10.1349, 0.3000]
     workspace_max: [8.2198, 12.5478, 2.7000]
-    max_linear_speed: 5.0
-    max_linear_accel: 3.0
-    max_linear_decel: 2.0
-    max_cable_speed: 6.0          # [m/s] free-span cable-speed limit (was counts/s — the drive's counts/s limit now lives in the bridge)
-    max_cable_accel: 4.0          # [m/s^2] free-span cable-accel limit (was counts/s^2)
+    max_linear_speed: 0.2
+    max_linear_accel: 0.2
+    max_linear_decel: 0.2
+    max_cable_speed: 0.3           # [m/s] DEBUG slow. PRODUCTION: 6.0
+    max_cable_accel: 0.3           # [m/s^2] DEBUG slow. PRODUCTION: 4.0
     rate_hz: 50.0
     cmd_timeout: 0.2
     cable_axial_stiffness: 98100.0
@@ -19,16 +27,16 @@ cdpr_node:
 
 trajectory_planner:
   ros__parameters:
-    max_linear_speed: 5.0
-    max_linear_accel: 3.0
+    max_linear_speed: 0.2
+    max_linear_accel: 0.2
     goal_tolerance: 0.02
     decel_distance: 0.3
     rate_hz: 50.0
 
 keyboard_teleop:
   ros__parameters:
-    max_linear_speed: 5.0
-    max_linear_accel: 4.0
+    max_linear_speed: 0.2
+    max_linear_accel: 0.2
     rate_hz: 30.0
 
 bird_sweeper:

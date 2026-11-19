@@ -1,3 +1,10 @@
+# =====================================================================
+# DEBUG SAFETY LIMITS (temporarily lowered for hold-then-slow-move integration).
+# PRODUCTION values to restore when debugging is done:
+#   max_speed  10485760.0  (80 rev/s)
+#   max_accel   6553600.0  (50 rev/s^2)
+#   max_step    5000000    (~2.4 m)
+# =====================================================================
 ethercat_bridge:
   ros__parameters:
     interface: "eth0"            # EtherCAT NIC on the master machine
@@ -8,8 +15,8 @@ ethercat_bridge:
     counts_per_rev: 131072       # A6-1000EC 17-bit encoder
     num_motors: 4                # 4 motors = anchors 0-3 (full CDPR)
     rt_cpu: 3                    # isolated core the RT thread is pinned to
-    max_speed: 10485760.0         # counts/s  (80 rev/s; 5 m/s TCP worst-case needs 79.6 rev/s; 6000 rpm = 100 rev/s max)
-    max_accel: 6553600.0         # counts/s^2 = 50 rev/s^2 (x131072). Matches 3 m/s^2 task accel (48 rev/s^2 needed).
+    max_speed: 500000.0           # DEBUG ~3.8 rev/s (0.26-0.65 m/s). PRODUCTION: 10485760.0 (80 rev/s; 6000 rpm = 100 rev/s max)
+    max_accel: 50000.0           # DEBUG ~0.38 rev/s^2 slow ramp. PRODUCTION: 6553600.0 (50 rev/s^2).
     pos_feedback_gain: 20.0      # 1/s: position drift correction on top of the interpolator's velocity
                                  # feedforward. Feedforward = d(cmd)/dt at the 100 Hz command rate; this
                                  # small term closes residual position drift without the sawtooth.
@@ -30,8 +37,8 @@ ethercat_bridge:
     direction: [-1, -1, -1, -1]  # per-motor winding sign: +1 = normal (positive counts = cable winds IN),
                                  # -1 = reversed. Negates that motor's logical counts on both command and
                                  # feedback. SIM DOESN'T NEED THIS (always forward).
-    max_step: 5000000            # counts (~2.4 m on the first layer): hard cap on how far ONE command may move a
-                                 # motor from its current position. Clamps a runaway wind-in from a wrong
+    max_step: 50000              # DEBUG ~2.6-6.5 cm hard cap on target distance from current position.
+                                 # PRODUCTION: 5000000 (~2.4 m). Clamps a runaway wind-in from a wrong
                                  # calibration to a safe step. 0 = disabled.
     max_following_error: 1000000 # counts (~0.48 m): watchdog. If a drive's actual position strays this far from its
                                  # commanded target, the bridge disables ALL motors and latches until restart.
