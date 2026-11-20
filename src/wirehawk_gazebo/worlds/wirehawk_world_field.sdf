@@ -42,7 +42,7 @@
       </link>
     </model>
 
-    <!-- Pillar 1 (Top Right) -->
+    <!-- Pillar 1 (mast 1, anchor A) -->
     <model name="pillar_1">
       <static>true</static>
       <pose>-7.3222 -11.1349 1.5 0 0 0</pose>
@@ -83,10 +83,10 @@
 
 
 
-    <!-- Pillar 2 (Bottom Right) -->
+    <!-- Pillar 2 (mast 2, anchor C) -->
     <model name="pillar_2">
       <static>true</static>
-      <pose>-10.9113 13.5478 1.5 0 0 0</pose>
+      <pose>9.0137 8.7221 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -97,7 +97,7 @@
     <!-- mast 2 label (geometric 7-segment digit) -->
     <model name="mast_2_label">
       <static>true</static>
-      <pose>-10.9113 13.5478 3.6 1.5708 0.0 0.6780</pose>
+      <pose>9.0137 8.7221 3.6 1.5708 0.0 -0.8018</pose>
       <link name="link">
     <visual name="top">
       <pose>0.0 1.1 0 0 0 0</pose>
@@ -154,10 +154,10 @@
 
 
 
-    <!-- Pillar 3 (Bottom Left) -->
+    <!-- Pillar 3 (mast 3, anchor D) -->
     <model name="pillar_3">
       <static>true</static>
-      <pose>9.0137 8.7221 1.5 0 0 0</pose>
+      <pose>9.2198 -11.1349 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -168,7 +168,7 @@
     <!-- mast 3 label (geometric 7-segment digit) -->
     <model name="mast_3_label">
       <static>true</static>
-      <pose>9.0137 8.7221 3.6 1.5708 0.0 -0.8018</pose>
+      <pose>9.2198 -11.1349 3.6 1.5708 0.0 -2.4500</pose>
       <link name="link">
     <visual name="top">
       <pose>0.0 1.1 0 0 0 0</pose>
@@ -225,10 +225,10 @@
 
 
 
-    <!-- Pillar 4 (Top Left) -->
+    <!-- Pillar 4 (mast 4, anchor B) -->
     <model name="pillar_4">
       <static>true</static>
-      <pose>9.2198 -11.1349 1.5 0 0 0</pose>
+      <pose>-10.9113 13.5478 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -239,7 +239,7 @@
     <!-- mast 4 label (geometric 7-segment digit) -->
     <model name="mast_4_label">
       <static>true</static>
-      <pose>9.2198 -11.1349 3.6 1.5708 0.0 -2.4500</pose>
+      <pose>-10.9113 13.5478 3.6 1.5708 0.0 0.6780</pose>
       <link name="link">
     <visual name="tl">
       <pose>-0.75 0.55 0 0 0 0</pose>
