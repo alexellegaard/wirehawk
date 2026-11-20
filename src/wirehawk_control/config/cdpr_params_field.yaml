@@ -7,14 +7,15 @@
 #   keyboard_teleop:    linear_speed 5.0, linear_accel 4.0
 # =====================================================================
 # Wirehawk control params — world: field (field, non-square quadrilateral)
-# Anchors in SLAVE order (a0=mast1=slave1, a1=mast2=slave2, a2=mast3=slave3, a3=mast4=slave4),
-# i.e. the CW EtherCAT daisy-chain: mast1 -> mast2 -> mast3 -> mast4 (tail). z = top-pulley height.
+# Anchors in SLAVE order = CW daisy-chain mast1 -> mast2 -> mast3 -> mast4.
+# Labels are A=mast1, B=mast2, C=mast3, D=mast4 (index i == mast i+1, always).
+# Frame: +x = "right" standing behind mast 1 looking into the workspace, +y = "up". z = pulley height.
 cdpr_node:
   ros__parameters:
-    anchors: [-7.3222, -11.1349, 3.0000, 9.0137, 8.7221, 3.0000, 9.2198, -11.1349, 3.0000, -10.9113, 13.5478, 3.0000]
-    start_position: [-1.0966, -1.1147, 1.2000]
-    workspace_min: [-9.9113, -10.1349, 0.3000]
-    workspace_max: [8.2198, 12.5478, 2.7000]
+    anchors: [7.3222, -11.1349, 3.0000, -9.0137, 8.7221, 3.0000, -9.2198, -11.1349, 3.0000, 10.9113, 13.5478, 3.0000]
+    start_position: [1.0966, -1.1147, 1.2000]
+    workspace_min: [-8.2198, -10.1349, 0.3000]
+    workspace_max: [9.9113, 12.5478, 2.7000]
     max_linear_speed: 0.2
     max_linear_accel: 0.2
     max_linear_decel: 0.2
@@ -44,8 +45,8 @@ keyboard_teleop:
 
 bird_sweeper:
   ros__parameters:
-    workspace_min: [-9.9113, -10.1349, 0.3000]
-    workspace_max: [8.2198, 12.5478, 2.7000]
+    workspace_min: [-8.2198, -10.1349, 0.3000]
+    workspace_max: [9.9113, 12.5478, 2.7000]
     max_decel: 2.0
     lateral_gain: 0.5
     scare_radius: 0.0
