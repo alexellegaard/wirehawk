@@ -1775,6 +1775,46 @@
         </visual>
       </link>
     </model>
+    <model name="band_vis_0">
+      <static>true</static>
+      <link name="link">
+        <visual name="v">
+          <geometry><cylinder><radius>0.008</radius><length>0.7</length></cylinder></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient><diffuse>0.8 0.4 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="band_vis_1">
+      <static>true</static>
+      <link name="link">
+        <visual name="v">
+          <geometry><cylinder><radius>0.008</radius><length>0.7</length></cylinder></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient><diffuse>0.8 0.4 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="band_vis_2">
+      <static>true</static>
+      <link name="link">
+        <visual name="v">
+          <geometry><cylinder><radius>0.008</radius><length>0.7</length></cylinder></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient><diffuse>0.8 0.4 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="band_vis_3">
+      <static>true</static>
+      <link name="link">
+        <visual name="v">
+          <geometry><cylinder><radius>0.008</radius><length>0.7</length></cylinder></geometry>
+          <material><ambient>0.8 0.4 0.1 1</ambient><diffuse>0.8 0.4 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
 
 <model name="payload">
       <pose>1.0966 -1.1147 1.2000 0 0 0</pose>
@@ -1809,6 +1849,9 @@
         <anchor_height>3.0</anchor_height>
         <gravity>9.80665</gravity>
               <slack_transition_strain>0.0001</slack_transition_strain>
+              <!-- Elastic band between rope end and payload. Injected from
+                   cdpr_params_<world>.yaml at launch (single source of truth). -->
+              <tcp_attachment_length>@TCP_ATTACHMENT_LENGTH@</tcp_attachment_length>
       </plugin>
       
     </model>

@@ -29,10 +29,9 @@ namespace wirehawk {
     double tension_unclamped = 0.0;                        // tension magnitude before the max_tension clamp
   };
 
-  // Visual trim radii (must match the SDF payload sphere and pillar radii):
-  // the drawn cable starts at the sphere surface and ends at the pillar surface
-  // so it does not pierce the visuals.
-  static constexpr double kPayloadVisualRadius = 0.3;
+  // Visual trim radius (must match the SDF pillar radius): the drawn cable ends
+  // at the pillar surface so it does not pierce the visual. It starts at the
+  // rope end (already offset from the payload by the band), so no start trim.
   static constexpr double kAnchorVisualRadius  = 0.2;
 
   /// Elastic catenary cable element.
@@ -177,6 +176,33 @@ namespace wirehawk {
     return out;
   }
 
+  /// Anchor -> rope-end chord length. The cable ends `_band` short of the payload
+  /// along the line toward the anchor (the elastic band spans that gap), matching
+  /// the controller's free-span convention (anchor -> rope-end). _band <= 0 gives
+  /// the plain anchor -> payload distance.
+  static double RopeChord(const gz::math::Vector3d &_anchor,
+                          const gz::math::Vector3d &_payload,
+                          double _band)
+  {
+    const gz::math::Vector3d d = _anchor - _payload;
+    const double dist = d.Length();
+    if (_band <= 0.0 || dist < 1e-9)
+      return dist;
+    return dist - _band;
+  }
+
+  /// Position of the rope end: `_band` from the payload toward the anchor.
+  static gz::math::Vector3d RopeEnd(const gz::math::Vector3d &_anchor,
+                                    const gz::math::Vector3d &_payload,
+                                    double _band)
+  {
+    const gz::math::Vector3d d = _anchor - _payload;
+    const double dist = d.Length();
+    if (_band <= 0.0 || dist < 1e-9)
+      return _payload;
+    return _payload + (d / dist) * _band;
+  }
+
   class CableCatenaryPlugin
       : public gz::sim::System,
         public gz::sim::ISystemConfigure,
@@ -189,6 +215,7 @@ namespace wirehawk {
     // j-th segment MODEL of cable i; cable_visuals_[i][j] is its visual entity
     // (whose cylinder geometry is resized each step).
     std::vector<std::vector<gz::sim::Entity>> cable_segments_;
+    std::vector<gz::sim::Entity> band_segments_;
 
     std::vector<gz::math::Vector3d> anchors_;
 
@@ -204,6 +231,8 @@ namespace wirehawk {
     double anchor_height_ = 0.0;          // m     z of the anchor (top of the mast)
     double gravity_ = 0.0;                // m/s^2 gravity magnitude for cable self-weight
     double slack_transition_strain_ = 0.0;// [-]   strain band for the smooth taut->slack ramp
+    double tcp_attachment_length_ = 0.0;  // m     rope-end -> payload offset (elastic band);
+                                          //       matches controller tcp_attachment_length
 
     gz::math::Vector3d prev_pos_{gz::math::Vector3d::Zero};
     std::chrono::steady_clock::duration last_time_{0};
@@ -241,6 +270,11 @@ namespace wirehawk {
       readParam("anchor_height", anchor_height_);
       readParam("gravity", gravity_);
       readParam("slack_transition_strain", slack_transition_strain_);
+      // Optional (default 0 = no band): elastic band between rope end and payload.
+      // Injected from cdpr_params_<world>.yaml at launch (single source of truth).
+      if (_sdf && _sdf->HasElement("tcp_attachment_length")) {
+        tcp_attachment_length_ = _sdf->Get<double>("tcp_attachment_length");
+      }
       if (missing) return;
 
       gz::sim::Model model(_entity);
@@ -278,6 +312,12 @@ namespace wirehawk {
         cable_segments_.push_back(segs);
       }
 
+      // Discover the band visuals: band_vis_<i> (one short segment per cable).
+      for (int i = 0; i < 4; ++i) {
+        const std::string name = "band_vis_" + std::to_string(i);
+        band_segments_.push_back(findModelByName(name));
+      }
+
       // Discover pillars
       std::vector<std::string> pillar_names = {"pillar_1", "pillar_2", "pillar_3", "pillar_4"};
       for (const auto &name : pillar_names) {
@@ -307,7 +347,7 @@ namespace wirehawk {
       gz::math::Vector3d p0 = gz::sim::worldPose(payload_link_entity_, _ecm).Pos();
       L0_.resize(num_cables_);
       for (size_t i = 0; i < num_cables_; ++i) {
-        L0_[i] = (anchors_[i] - p0).Length();
+        L0_[i] = RopeChord(anchors_[i], p0, tcp_attachment_length_);
       }
 
       if (!_ecm.Component<gz::sim::components::ExternalWorldWrenchCmd>(payload_link_entity_)) {
@@ -377,7 +417,7 @@ namespace wirehawk {
 
       // Trim the drawn cable to the visual surfaces so it does not pierce the
       // payload sphere or the anchor pillar.
-      const gz::math::Vector3d p_start = _p + kPayloadVisualRadius * d_hat;
+      const gz::math::Vector3d p_start = _p;
       const gz::math::Vector3d a_end   = a - kAnchorVisualRadius  * d_hat;
       const gz::math::Vector3d span = a_end - p_start;
 
@@ -416,6 +456,32 @@ namespace wirehawk {
         gz::sim::Model seg_model(cable_segments_[_i][j]);
         seg_model.SetWorldPoseCmd(_ecm, gz::math::Pose3d(mid, rot));
       }
+    }
+
+    /// Position one cable's band visual (the short elastic segment between the
+    /// payload and the rope end).
+    void UpdateBand(size_t _i, const gz::math::Vector3d &_payload,
+                    const gz::math::Vector3d &_rope_end,
+                    gz::sim::EntityComponentManager &_ecm)
+    {
+      if (_i >= band_segments_.size() || band_segments_[_i] == gz::sim::kNullEntity)
+        return;
+      const gz::math::Vector3d seg = _rope_end - _payload;
+      const double len = seg.Length();
+      gz::sim::Model seg_model(band_segments_[_i]);
+      if (len < 1e-6) {
+        seg_model.SetWorldPoseCmd(_ecm,
+            gz::math::Pose3d(0.0, 0.0, 500.0, 0.0, 0.0, 0.0));
+        return;
+      }
+      const gz::math::Vector3d mid = 0.5 * (_payload + _rope_end);
+      const gz::math::Vector3d u = seg / len;
+      gz::math::Quaterniond rot;
+      if (std::fabs(u.Z()) < 0.999)
+        rot.SetFrom2Axes(gz::math::Vector3d::UnitZ, u);
+      else
+        rot.SetFrom2Axes(gz::math::Vector3d::UnitX, u);
+      seg_model.SetWorldPoseCmd(_ecm, gz::math::Pose3d(mid, rot));
     }
 
     void PreUpdate(const gz::sim::UpdateInfo &_info,
@@ -463,15 +529,23 @@ namespace wirehawk {
       }
 
       for (size_t i = 0; i < num_cables_; ++i) {
-        CatenaryResult res = SolveCatenary(anchors_[i], p, current_L0[i],
+        // Cable attaches at the rope end, tcp_attachment_length_ short of the
+        // payload along the line to the anchor (the elastic band spans the gap).
+        // The force direction (anchor -> rope end) is collinear with
+        // (anchor -> payload), so applying it to the payload is exact.
+        const gz::math::Vector3d rope_end =
+            RopeEnd(anchors_[i], p, tcp_attachment_length_);
+        CatenaryResult res = SolveCatenary(anchors_[i], rope_end, current_L0[i],
                                            linear_density_, axial_stiffness_,
                                            gravity_, max_tension_,
                                            slack_transition_strain_);
         if (res.valid)
           net_force += res.force;
 
-        if (update_visual)
-          UpdateVisual(i, p, res, _ecm);
+        if (update_visual) {
+          UpdateVisual(i, rope_end, res, _ecm);
+          UpdateBand(i, p, rope_end, _ecm);
+        }
 
         // Publish per-cable tension magnitude (N); 0 when slack.
         if (i < tension_pubs_.size()) {
