@@ -36,7 +36,7 @@ def read_raw_positions():
 def main():
     print("Reading raw 0x6064 positions (each rope end must be AT the pulley)...")
     pos = read_raw_positions()
-    print(f"zero_ticks (slave order 0=mast1,1=mast3,2=mast2,3=mast4) = {pos}")
+    print(f"zero_ticks (slave order 0=mast1,1=mast2,2=mast3,3=mast4) = {pos}")
 
     txt = open(BRIDGE_YAML).read()
     txt = re.sub(r"zero_ticks:\s*\[[^\]]*\]", f"zero_ticks: {pos}", txt, count=1)

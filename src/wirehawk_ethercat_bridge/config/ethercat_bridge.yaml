@@ -29,11 +29,11 @@ ethercat_bridge:
     spool_rope_d_m: 0.002        # cable diameter [m]
     spool_turns_per_layer: 70    # turns per layer (ideal square packing)
     spool_max_layers: 9          # max winding layers
-    # raw 0x6064 at "rope end at the pulley", in SLAVE order (0=mast1, 1=mast3,
-    # 2=mast2, 3=mast4 — the CW daisy-chain). Logged once via log_zeros.py; only
+    # raw 0x6064 at "rope end at the pulley", in SLAVE order (0=mast1, 1=mast2,
+    # 2=mast3, 3=mast4 — the CW daisy-chain). Logged once via log_zeros.py; only
     # changes if a spool is replaced or a drive is re-homed. Battery-backed
     # multi-turn encoder => survives power cycles.
-    zero_ticks: [-159866262, -137708708, 13605204, -72631542]
+    zero_ticks: [-159866262, 13605204, -137708708, -72631542]
     direction: [-1, -1, -1, -1]  # per-motor winding sign: +1 = normal (positive counts = cable winds IN),
                                  # -1 = reversed. Negates that motor's logical counts on both command and
                                  # feedback. SIM DOESN'T NEED THIS (always forward).

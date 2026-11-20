@@ -83,10 +83,10 @@
 
 
 
-    <!-- Pillar 2 (cable 1 = mast 3) -->
+    <!-- Pillar 2 (cable 1 = mast 2) -->
     <model name="pillar_2">
       <static>true</static>
-      <pose>-9.2198 -11.1349 1.5 0 0 0</pose>
+      <pose>-9.0137 8.7221 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -154,10 +154,10 @@
 
 
 
-    <!-- Pillar 3 (cable 2 = mast 2) -->
+    <!-- Pillar 3 (cable 2 = mast 3) -->
     <model name="pillar_3">
       <static>true</static>
-      <pose>-9.0137 8.7221 1.5 0 0 0</pose>
+      <pose>-9.2198 -11.1349 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>

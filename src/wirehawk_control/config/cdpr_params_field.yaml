@@ -7,7 +7,7 @@
 #   keyboard_teleop:    linear_speed 5.0, linear_accel 4.0
 # =====================================================================
 # Wirehawk control params — world: field (field, non-square quadrilateral)
-# Anchors in SLAVE (daisy-chain) order: mast1 -> mast3 -> mast2 -> mast4 (clockwise perimeter).
+# Anchors in SLAVE (daisy-chain) order: mast1 -> mast2 -> mast3 -> mast4 (clockwise).
 # Frame: +x = "right" standing behind mast 1 looking into the workspace, +y = "up". z = pulley height.
 #   mast 1        = ( 7.3222, -11.1349)
 #   mast 2        = (-9.0137,   8.7221)
@@ -15,7 +15,7 @@
 #   mast 4 (tail) = (10.9113,  13.5478)
 cdpr_node:
   ros__parameters:
-    anchors: [7.3222, -11.1349, 3.0000, -9.2198, -11.1349, 3.0000, -9.0137, 8.7221, 3.0000, 10.9113, 13.5478, 3.0000]
+    anchors: [7.3222, -11.1349, 3.0000, -9.0137, 8.7221, 3.0000, -9.2198, -11.1349, 3.0000, 10.9113, 13.5478, 3.0000]
     start_position: [1.0966, -1.1147, 1.2000]
     workspace_min: [-8.2198, -10.1349, 0.3000]
     workspace_max: [9.9113, 12.5478, 2.7000]
