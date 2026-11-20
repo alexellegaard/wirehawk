@@ -21,12 +21,12 @@ import numpy as np
 # ---- CONFIG (edit these) ---------------------------------------------------
 WORLD = "field"                  # output: cdpr_params_<WORLD>.yaml
 PULLEY_Z = 3.0                   # anchor/top-pulley height [m]
-ANCHORS_XY = [                   # from mast_position.py, SLAVE order a0..a3 (CW daisy-chain).
-                                 # Labels A=mast1, B=mast2, C=mast3, D=mast4; +x = right (field view).
-    (7.3222,  -11.1349),         # a0 = mast 1 = slave 1  (A)
-    (-9.0137,  8.7221),          # a1 = mast 2 = slave 2  (B)
-    (-9.2198, -11.1349),         # a2 = mast 3 = slave 3  (C)
-    (10.9113,  13.5478),         # a3 = mast 4 = slave 4  (D)
+ANCHORS_XY = [                   # from mast_position.py, SLAVE (daisy-chain) order a0..a3:
+                                 # mast1 -> mast3 -> mast2 -> mast4 (clockwise perimeter). +x = right.
+    (7.3222,  -11.1349),         # a0 = mast 1 = slave 1
+    (-9.2198, -11.1349),         # a1 = mast 3 = slave 2
+    (-9.0137,  8.7221),          # a2 = mast 2 = slave 3
+    (10.9113,  13.5478),         # a3 = mast 4 = slave 4
 ]
 
 # --- TCP measurement: fill ONE of these, or neither (rope method measures it) ---
@@ -104,7 +104,7 @@ def main():
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
     yaml_text = f"""# Wirehawk control params — world: {WORLD} (field, non-square quadrilateral)
-# Anchors in SLAVE order = CW daisy-chain mast1 -> mast2 -> mast3 -> mast4 (labels A,B,C,D).
+# Anchors in SLAVE (daisy-chain) order: mast1 -> mast3 -> mast2 -> mast4 (clockwise).
 cdpr_node:
   ros__parameters:
     anchors: [{', '.join(flat_anchors)}]

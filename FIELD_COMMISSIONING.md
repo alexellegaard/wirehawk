@@ -32,7 +32,7 @@ python3 ~/mast_position.py
 
 Edit `~/wirehawk/src/wirehawk_control/scripts/commission_field.py`:
 
-- `ANCHORS_XY` ← the 4 anchors from A1, in **SLAVE order** — a0=mast1, a1=mast2, a2=mast3, a3=mast4 (the CW daisy-chain). If the masts haven't moved, leave as-is.
+- `ANCHORS_XY` ← the 4 anchors from A1, in **SLAVE order** — a0=mast1, a1=mast3, a2=mast2, a3=mast4 (the CW daisy-chain). If the masts haven't moved, leave as-is.
 
 ```bash
 python3 ~/wirehawk/src/wirehawk_control/scripts/commission_field.py
