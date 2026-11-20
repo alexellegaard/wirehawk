@@ -86,7 +86,7 @@
     <!-- Pillar 2 (cable 1 = mast 2) -->
     <model name="pillar_2">
       <static>true</static>
-      <pose>-9.0137 8.7221 1.5 0 0 0</pose>
+      <pose>-9.2198 -11.1349 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -97,7 +97,7 @@
     <!-- mast 2 label (geometric 7-segment digit) -->
     <model name="mast_2_label">
       <static>true</static>
-      <pose>-9.0137 8.7221 3.6 1.5708 0.0 0.8018</pose>
+      <pose>-9.2198 -11.1349 3.6 1.5708 0.0 2.4500</pose>
       <link name="link">
     <visual name="top">
       <pose>0.0 1.1 0 0 0 0</pose>
@@ -157,7 +157,7 @@
     <!-- Pillar 3 (cable 2 = mast 3) -->
     <model name="pillar_3">
       <static>true</static>
-      <pose>-9.2198 -11.1349 1.5 0 0 0</pose>
+      <pose>-9.0137 8.7221 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -168,7 +168,7 @@
     <!-- mast 3 label (geometric 7-segment digit) -->
     <model name="mast_3_label">
       <static>true</static>
-      <pose>-9.2198 -11.1349 3.6 1.5708 0.0 2.4500</pose>
+      <pose>-9.0137 8.7221 3.6 1.5708 0.0 0.8018</pose>
       <link name="link">
     <visual name="top">
       <pose>0.0 1.1 0 0 0 0</pose>
