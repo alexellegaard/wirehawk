@@ -18,26 +18,27 @@ def generate_launch_description():
     plugin_path = os.path.join(pkg_prefix, 'lib')
 
     def _templated_sdf_launch(context):
-        """Template the SDF with tcp_attachment_length from the controller's
-        yaml (single source of truth), so the sim's elastic band always matches
-        the value the controller uses — no second place to keep in sync."""
+        """Template the SDF with the controller's yaml values (single source of
+        truth): tcp_attachment_length (elastic band) and payload_mass (payload
+        inertia). The sim then always matches the controller — no second place
+        to keep in sync."""
         world_val = world.perform(context)
 
-        tcp_att = 0.0
+        ros_params = {}
         yaml_path = os.path.join(control_share, 'config', f'cdpr_params_{world_val}.yaml')
         if os.path.exists(yaml_path):
             with open(yaml_path) as f:
                 params = yaml.safe_load(f) or {}
-            tcp_att = float(
-                params.get('cdpr_node', {})
-                .get('ros__parameters', {})
-                .get('tcp_attachment_length', 0.0)
-            )
+            ros_params = params.get('cdpr_node', {}).get('ros__parameters', {})
+
+        tcp_att = float(ros_params.get('tcp_attachment_length', 0.0))
+        mass = float(ros_params.get('payload_mass', 1.0))
 
         sdf_tpl = os.path.join(pkg_share, 'worlds', f'wirehawk_world_{world_val}.sdf')
         with open(sdf_tpl) as f:
             sdf = f.read()
         sdf = sdf.replace('@TCP_ATTACHMENT_LENGTH@', f'{tcp_att:g}')
+        sdf = sdf.replace('@PAYLOAD_MASS@', f'{mass:g}')
 
         fd, sdf_path = tempfile.mkstemp(
             suffix='.sdf', prefix=f'wirehawk_world_{world_val}_')
