@@ -19,10 +19,10 @@ Machines: **Pi** = field EtherCAT master (pull-only). **Laptop** = your XPS (run
 
 Shoot all six pairwise mast distances, ideally twice each (once from each end). The **diagonal `d02`** is the one that was wrong before — it dominates the anchor error (~0.3 m).
 
-Edit `~/mast_position.py` → `MEASUREMENTS` (six values), then:
+Edit `~/wirehawk/src/wirehawk_control/scripts/mast_position.py` → `MEASUREMENTS` (six values), then:
 
 ```bash
-python3 ~/mast_position.py
+python3 ~/wirehawk/src/wirehawk_control/scripts/mast_position.py
 ```
 
 - [ ] Prints `Anchor positions (m)` for a0..a3.
@@ -165,7 +165,7 @@ ros2 run wirehawk_control keyboard_teleop --ros-args --params-file ~/wirehawk/in
 
 | File | Machine | What edits it |
 |---|---|---|
-| `~/mast_position.py` | laptop | `MEASUREMENTS` (6 distances) — you |
+| `~/wirehawk/src/wirehawk_control/scripts/mast_position.py` | laptop | `MEASUREMENTS` (6 distances) — you |
 | `src/wirehawk_control/scripts/commission_field.py` | laptop | `ANCHORS_XY` — you |
 | `src/wirehawk_control/config/cdpr_params_field.yaml` | laptop | `anchors`, `workspace_*`, `payload_mass` — you / `commission_field.py` |
 | `src/wirehawk_ethercat_bridge/config/ethercat_bridge.yaml` | laptop→Pi | `zero_ticks` (`log_zeros.py`), `mast_run`, `direction` (you) |
@@ -175,7 +175,7 @@ ros2 run wirehawk_control keyboard_teleop --ros-args --params-file ~/wirehawk/in
 
 | Do this | Run this (machine) |
 |---|---|
-| Estimate mast anchors | `python3 ~/mast_position.py` (laptop) |
+| Estimate mast anchors | `python3 ~/wirehawk/src/wirehawk_control/scripts/mast_position.py` (laptop) |
 | Write anchors + config | `python3 ~/wirehawk/src/wirehawk_control/scripts/commission_field.py` (laptop) |
 | Log zero ticks (once) | `python3 ~/wirehawk/src/wirehawk_control/scripts/log_zeros.py` (Pi) |
 | Read raw encoders | `cd ~/wirehawk/src/ethercat && sudo ./a6_encoder eth0` (Pi) |
