@@ -23,6 +23,15 @@ class SimBridgeNode(Node):
         # Four cables, matching the four-pillar Gazebo world (anchors A0..A3).
         self.num_cables = 4
 
+        # Approach A: sag-bias (mu) + measurement noise (sigma) on the FEEDBACK
+        # only — mimics the real encoder reading a sagging arc, which the
+        # straight-cable FK doesn't model. Default 0 = exact echo (unchanged).
+        self.declare_parameter('sag_bias', 0.0)
+        self.declare_parameter('noise_sigma', 0.0)
+        self.sag_bias = float(self.get_parameter('sag_bias').value)
+        self.noise_sigma = float(self.get_parameter('noise_sigma').value)
+        self.rng = np.random.default_rng()
+
         self.cmd_sub = self.create_subscription(
             MotorCommand, 'cmd/motors', self.cmd_cb, 10)
         self.state_pub = self.create_publisher(MotorState, 'state/motors', 10)
@@ -44,9 +53,13 @@ class SimBridgeNode(Node):
             m.data = float(lengths[i])
             self.length_pubs[i].publish(m)
 
-        # Simulated feedback: perfect-tracking virtual encoder.
+        # Simulated feedback: command + sag bias + noise (Approach A). The bias/
+        # noise live in the measurement path only, not the /cdpr/l command.
+        fb = lengths + self.sag_bias
+        if self.noise_sigma > 0.0:
+            fb = fb + self.rng.normal(0.0, self.noise_sigma, size=lengths.shape)
         state = MotorState()
-        state.position = [float(l) for l in lengths]
+        state.position = [float(v) for v in fb]
         state.torque = [0] * len(lengths)          # torque synthesis: future
         state.status_word = [0] * len(lengths)     # drive state: future
         state.error_code = [0] * len(lengths)

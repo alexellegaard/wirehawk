@@ -12,6 +12,10 @@ def generate_launch_description():
 
     world = LaunchConfiguration('world')
     backend = LaunchConfiguration('backend')
+    # Approach A: sag-bias (mu) + measurement noise (sigma) added to the sim
+    # feedback. Launch-time tunable; default 0 = exact echo (unchanged behaviour).
+    sag_bias = LaunchConfiguration('sag_bias')
+    noise_sigma = LaunchConfiguration('noise_sigma')
     # cdpr_params_<world>.yaml, calibrated to the matching world's anchor layout
     params_file = [control_pkg, '/config/cdpr_params_', world, '.yaml']
 
@@ -62,6 +66,7 @@ def generate_launch_description():
         package='wirehawk_gazebo_bridge',
         executable='sim_bridge',
         name='sim_bridge',
+        parameters=[{'sag_bias': sag_bias, 'noise_sigma': noise_sigma}],
         remappings=[('state/motors', '/sim/state/motors')],
         output='screen'
     )
@@ -80,6 +85,10 @@ def generate_launch_description():
                               description='World variant: 20x20_3m, 20x20_5m, 40x40_3m, 70x70_3m, 70x70_5m'),
         DeclareLaunchArgument('backend', default_value='sim',
                               description="Controller feedback source: 'sim' (sim bridge) or 'real' (EtherCAT bridge)"),
+        DeclareLaunchArgument('sag_bias', default_value='0.0',
+                              description='Sag bias (mu) added to the sim feedback [m]'),
+        DeclareLaunchArgument('noise_sigma', default_value='0.0',
+                              description='Gaussian noise std dev (sigma) on the sim feedback [m]'),
         sim_launch,
         cdpr_node,
         motor_logger,
