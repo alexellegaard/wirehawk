@@ -23,12 +23,12 @@ class SimBridgeNode(Node):
         # Four cables, matching the four-pillar Gazebo world (anchors A0..A3).
         self.num_cables = 4
 
-        # Approach A: sag-bias (mu) + measurement noise (sigma) on the FEEDBACK
-        # only — mimics the real encoder reading a sagging arc, which the
-        # straight-cable FK doesn't model. Default 0 = exact echo (unchanged).
-        self.declare_parameter('sag_bias', 0.0)
+        # Measurement noise (sigma) on the FEEDBACK only — models encoder jitter.
+        # Zero-mean, so no systematic drift. Default 0 = exact echo.
+        # (A constant sag BIAS on the feedback was tried and rejected: the FK
+        # keeps "chasing" the offset and the payload runs away. Sag is a physics
+        # effect, already modelled by the catenary plugin's linear_density.)
         self.declare_parameter('noise_sigma', 0.0)
-        self.sag_bias = float(self.get_parameter('sag_bias').value)
         self.noise_sigma = float(self.get_parameter('noise_sigma').value)
         self.rng = np.random.default_rng()
 
@@ -53,9 +53,9 @@ class SimBridgeNode(Node):
             m.data = float(lengths[i])
             self.length_pubs[i].publish(m)
 
-        # Simulated feedback: command + sag bias + noise (Approach A). The bias/
-        # noise live in the measurement path only, not the /cdpr/l command.
-        fb = lengths + self.sag_bias
+        # Simulated feedback: command + zero-mean measurement noise. The noise
+        # lives in the measurement path only, not the /cdpr/l command.
+        fb = lengths
         if self.noise_sigma > 0.0:
             fb = fb + self.rng.normal(0.0, self.noise_sigma, size=lengths.shape)
         state = MotorState()
