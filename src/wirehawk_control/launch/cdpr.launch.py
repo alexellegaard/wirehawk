@@ -23,6 +23,12 @@ def generate_launch_description():
         "'/sim/state/motors' if '", backend, "' == 'sim' else '/real/state/motors'"
     ])
 
+    # Startup-race guard: backend:=real holds (publishes nothing) until the first
+    # feedback arrives; backend:=sim publishes home first (its bridge only echoes).
+    hold_until_feedback = PythonExpression([
+        "'True' if '", backend, "' == 'real' else 'False'"
+    ])
+
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(gazebo_pkg, 'launch', 'sim.launch.py')
@@ -35,7 +41,7 @@ def generate_launch_description():
         package='wirehawk_control',
         executable='cdpr_node',
         name='cdpr_node',
-        parameters=[params_file],
+        parameters=[params_file, {'hold_until_feedback': hold_until_feedback}],
         remappings=[('state/motors', state_topic)],
         output='screen'
     )

@@ -46,6 +46,10 @@ class CDPRNode(Node):
         self.declare_parameter('payload_mass', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('fk_gain', rclpy.Parameter.Type.DOUBLE)
         self.declare_parameter('tcp_attachment_length', 0.0)
+        # Startup-race guard: publish nothing until the first valid feedback
+        # arrives (set True for backend:=real). False for the sim, whose bridge
+        # only echoes commands and would otherwise deadlock.
+        self.declare_parameter('hold_until_feedback', False)
 
         raw_anchors = self.get_parameter('anchors').value
         if not raw_anchors or len(raw_anchors) % 3 != 0:
@@ -58,6 +62,7 @@ class CDPRNode(Node):
         # anchor->rope-end length, but the FK/IK work in anchor->TCP. Add it on
         # feedback, subtract it on command.
         self.tcp_attachment_length = float(self.get_parameter('tcp_attachment_length').value)
+        self.hold_until_feedback = self.get_parameter('hold_until_feedback').value
 
         self.controller = CDPRController(
             anchors=np.array(raw_anchors, dtype=float).reshape(-1, 3),
@@ -147,6 +152,12 @@ class CDPRNode(Node):
         # Negative feedback (direction/calibration mismatch): do NOT command
         # motion. The bridge holds the last target — the motors stay put.
         if self.feedback_invalid:
+            return
+
+        # Startup-race guard: publish NOTHING until the first valid feedback
+        # arrives, so the controller can't command "home" before it has read the
+        # motors. (backend:=sim disables this — its bridge only echoes commands.)
+        if self.hold_until_feedback and self.measured_lengths is None:
             return
 
         # Watchdog: zero velocity if the task input stops (stale /cmd_vel).

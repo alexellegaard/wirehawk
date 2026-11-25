@@ -1,4 +1,8 @@
-# Wirehawk runbook — controller, sim, and real motors
+# Wirehawk — backend scenario matrix (sim vs real)
+
+How the controller, sim bridge, and real bridge interact. For the step-by-step
+procedures, see **`FIELD_COMMISSIONING.md`** (ground-up: pull/calibrate/build) and
+**`FIELD_OPERATION.md`** (day-to-day calibrated run).
 
 ## Machines
 
@@ -36,7 +40,7 @@ No Pi bridge. Controller commands the sim echo and reads it back. Pure simulatio
 Laptop:
 
 ```bash
-ros2 launch wirehawk_control cdpr.launch.py world:=40x40_3m backend:=sim
+ros2 launch wirehawk_control cdpr.launch.py world:=field backend:=sim
 ```
 
 then a driver (second terminal) — see "Driving" below.
@@ -55,8 +59,9 @@ Laptop (manual controller node, NOT the launch file):
 
 ```bash
 ros2 run wirehawk_control cdpr_node --ros-args \
-  --params-file ~/wirehawk/src/wirehawk_control/config/cdpr_params_40x40_3m.yaml \
-  -r state/motors:=/real/state/motors
+  --params-file ~/wirehawk/src/wirehawk_control/config/cdpr_params_field.yaml \
+  -r state/motors:=/real/state/motors \
+  -p hold_until_feedback:=True
 ```
 
 then a driver.
@@ -69,18 +74,18 @@ Pi: bridge (as in (b)).
 Laptop:
 
 ```bash
-ros2 launch wirehawk_control cdpr.launch.py world:=40x40_3m backend:=sim
+ros2 launch wirehawk_control cdpr.launch.py world:=field backend:=sim
 ```
 
 ### (d) both — feedback from real (the normal real run)
 
-Both bridges up, `backend:=real`. Controller reads the real encoder; the sim bridge is a spectator. Resume-holds the motors.
+Both bridges up, `backend:=real`. Controller reads the real encoder; the sim bridge is a spectator. Resume-holds the motors, and with `hold_until_feedback` it publishes **nothing** until the first encoder readback (no startup home command).
 
 Pi: bridge (as in (b)).
 Laptop:
 
 ```bash
-ros2 launch wirehawk_control cdpr.launch.py world:=40x40_3m backend:=real
+ros2 launch wirehawk_control cdpr.launch.py world:=field backend:=real
 ```
 
 then a driver.
@@ -90,17 +95,17 @@ then a driver.
 ```bash
 # WASD
 ros2 run wirehawk_control keyboard_teleop --ros-args \
-  --params-file ~/wirehawk/src/wirehawk_control/config/cdpr_params_40x40_3m.yaml
+  --params-file ~/wirehawk/src/wirehawk_control/config/cdpr_params_field.yaml
 
 # Bird (dummy bird at (X,Y))
 ros2 run wirehawk_control bird_sweeper --ros-args \
-  --params-file ~/wirehawk/src/wirehawk_control/config/cdpr_params_40x40_3m.yaml
+  --params-file ~/wirehawk/src/wirehawk_control/config/cdpr_params_field.yaml
 ros2 run wirehawk_control missionplanner_dummy --ros-args \
   -p target_position:=[X,Y,1.5] -p speed:=5.0
 
 # Goal-based planner
 ros2 run wirehawk_control trajectory_planner --ros-args \
-  --params-file ~/wirehawk/src/wirehawk_control/config/cdpr_params_40x40_3m.yaml
+  --params-file ~/wirehawk/src/wirehawk_control/config/cdpr_params_field.yaml
 ```
 
 ## Rules
@@ -108,4 +113,4 @@ ros2 run wirehawk_control trajectory_planner --ros-args \
 - **Power the drives on before** the Pi bridge / `a6_*` tools (else `no slaves`).
 - **Never run `backend:=sim` with the motors powered** — that is scenario (c), the full-speed slew.
 - **One `/cmd_vel` source at a time** — `keyboard_teleop`, `bird_sweeper`, `trajectory_planner` fight each other.
-- Calibrate once (Pi): `python3 src/wirehawk_control/scripts/calibrate.py 40x40_3m`. With spools on, keep motion gentle (heavier inertia than a bare shaft).
+- Calibration is a one-time log (`log_zeros.py` on the Pi) — see `FIELD_COMMISSIONING.md`, not the old `calibrate.py`.
