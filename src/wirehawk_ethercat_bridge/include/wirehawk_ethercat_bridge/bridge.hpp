@@ -95,7 +95,7 @@ struct Config {
     int64_t max_step = 0;                         // counts: max travel a single command may demand (0 = disabled)
     int64_t max_following_error = 1000000;        // counts (~0.48 m): watchdog — disable all motors on violation
     int16_t max_torque = 0;                       // 0.1%-rated torque units: watchdog — disable all motors on |0x6077| exceed (0 = disabled)
-    int16_t pre_tension_torque = 0;               // 0.1%-rated: |torque| RISE over the slack level that marks a cable taut (0 = skip pre-tension)
+    int16_t pre_tension_torque = 0;               // 0.1%-rated: absolute |0x6077| that marks a cable taut (0 = skip pre-tension)
     int32_t pre_tension_step = 0;                 // raw counts/cycle wound in during pre-tension (0 = skip pre-tension)
 };
 

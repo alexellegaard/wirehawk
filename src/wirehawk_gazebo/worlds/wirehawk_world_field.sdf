@@ -45,7 +45,7 @@
     <!-- Pillar 1 (cable 0 = mast 1) -->
     <model name="pillar_1">
       <static>true</static>
-      <pose>7.3222 -11.1349 1.5 0 0 0</pose>
+      <pose>6.8610 -11.2230 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -86,7 +86,7 @@
     <!-- Pillar 2 (cable 1 = mast 2) -->
     <model name="pillar_2">
       <static>true</static>
-      <pose>-9.2198 -11.1349 1.5 0 0 0</pose>
+      <pose>-9.9419 -11.2230 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -157,7 +157,7 @@
     <!-- Pillar 3 (cable 2 = mast 3) -->
     <model name="pillar_3">
       <static>true</static>
-      <pose>-9.0137 8.7221 1.5 0 0 0</pose>
+      <pose>-8.5653 8.9122 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>
@@ -228,7 +228,7 @@
     <!-- Pillar 4 (cable 3 = mast 4) -->
     <model name="pillar_4">
       <static>true</static>
-      <pose>10.9113 13.5478 1.5 0 0 0</pose>
+      <pose>11.6463 13.5339 1.5 0 0 0</pose>
       <link name="link">
         <visual name="visual">
           <geometry><cylinder><radius>0.2</radius><length>3.0</length></cylinder></geometry>

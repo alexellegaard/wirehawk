@@ -243,8 +243,6 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
     // instead of slack lengths that triangulate below the floor.
     bool pre_tensioning = (g_cfg.pre_tension_torque > 0 && g_cfg.pre_tension_step > 0);
     bool taut[MAX_MOTORS] = {false};
-    int16_t slack_torque[MAX_MOTORS] = {0};
-    bool slack_recorded[MAX_MOTORS] = {false};
     for (int i = 0; i < N; i++) {
         motion[i].cmd = tx[i]->position_actual;
         motion[i].vel = 0.0;
@@ -330,17 +328,11 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                 all_enabled = false;
             } else if (state == 0x0027) {            // operation enabled
                 if (pre_tensioning && !taut[i]) {
-                    // Pre-tension: wind in (direction[] maps the sign) and watch
-                    // the |torque| rise over its recorded slack level — the cable
-                    // is taut once the rise crosses pre_tension_torque.
-                    if (!slack_recorded[i]) {
-                        slack_torque[i] = tx[i]->torque_actual;
-                        slack_recorded[i] = true;
-                    }
+                    // Pre-tension: wind in (direction[] maps the sign) until the
+                    // absolute |torque| reaches pre_tension_torque.
                     motion[i].cmd += g_cfg.direction[i] * g_cfg.pre_tension_step;
                     int tq = (int)tx[i]->torque_actual;   tq = tq < 0 ? -tq : tq;
-                    int sq = (int)slack_torque[i];        sq = sq < 0 ? -sq : sq;
-                    if (tq - sq >= g_cfg.pre_tension_torque) {
+                    if (tq >= g_cfg.pre_tension_torque) {
                         taut[i] = true;
                     }
                 } else {
