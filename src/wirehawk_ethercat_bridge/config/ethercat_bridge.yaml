@@ -44,10 +44,10 @@ ethercat_bridge:
     max_following_error: 1000000 # counts (~0.48 m): watchdog. If a drive's actual position strays this far from its
                                  # commanded target, the bridge disables ALL motors and latches until restart.
                                  # 0 = disabled.
-    max_torque: 150              # torque watchdog (0.1% rated: 1000 = 100% rated). If any drive's |0x6077| exceeds
+    max_torque: 200              # torque watchdog (0.1% rated: 1000 = 100% rated). If any drive's |0x6077| exceeds
                                  # this, disable ALL motors + latch until restart. 0 = disabled.
-                                 # TUNE: set ~2-3x the observed holding torque at 1 kg (watch /real/state/motors).
-    pre_tension_torque: 35       # absolute |0x6077| torque (0.1% rated) that marks a cable taut. 0 = skip pre-tension.
-                                 # TUNE: must sit between the slack torque (~23 max) and the taut torque (~45 min at 1.5 kg).
-    pre_tension_step: 1000       # counts/cycle wound in during pre-tension = wind-in VELOCITY of
-                                 # pre_tension_step/dt (~250k counts/s ~ 0.12 m/s), ramped up accel-limited. 0 = skip pre-tension.
+                                 # TUNE: above the taut (mass-suspended) torque but below the spool's safe limit.
+    pre_tension_torque: 100      # absolute |0x6077| torque (0.1% rated) that marks a cable taut. 0 = skip pre-tension.
+                                 # TUNE: the taut (mass-suspended) torque — 35 left cables barely taut.
+    pre_tension_step: 500        # counts/cycle wound in during pre-tension = wind-in VELOCITY of
+                                 # pre_tension_step/dt (~125k counts/s ~ 0.06 m/s), ramped up accel-limited. 0 = skip pre-tension.
