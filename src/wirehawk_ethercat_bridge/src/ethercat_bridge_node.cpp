@@ -43,6 +43,8 @@ int main(int argc, char** argv)
     node->declare_parameter("max_step", cfg.max_step);
     node->declare_parameter("max_following_error", cfg.max_following_error);
     node->declare_parameter("max_torque", cfg.max_torque);
+    node->declare_parameter("pre_tension_torque", cfg.pre_tension_torque);
+    node->declare_parameter("pre_tension_step", cfg.pre_tension_step);
 
     cfg.interface      = node->get_parameter("interface").as_string();
     cfg.cycle_ns       = node->get_parameter("cycle_ns").as_int();
@@ -72,6 +74,8 @@ int main(int argc, char** argv)
     cfg.max_step = node->get_parameter("max_step").as_int();
     cfg.max_following_error = node->get_parameter("max_following_error").as_int();
     cfg.max_torque = node->get_parameter("max_torque").as_int();
+    cfg.pre_tension_torque = node->get_parameter("pre_tension_torque").as_int();
+    cfg.pre_tension_step = node->get_parameter("pre_tension_step").as_int();
 
     BridgeData data;
 

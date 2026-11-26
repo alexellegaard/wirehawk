@@ -27,10 +27,10 @@ WORLD = "field"                  # output: cdpr_params_<WORLD>.yaml
 PULLEY_Z = 3.0                   # anchor/top-pulley height [m] (measure it; don't assume mast height)
 ANCHORS_XY = [                   # from mast_position.py, SLAVE (daisy-chain) order a0..a3:
                                  # mast1 -> mast2 -> mast3 -> mast4 (clockwise). +x = right (field view).
-    (7.3222,  -11.1349),         # a0 = mast 1
-    (-9.2198, -11.1349),         # a1 = mast 2
-    (-9.0137,  8.7221),          # a2 = mast 3
-    (10.9113,  13.5478),         # a3 = mast 4
+    (6.8610,  -11.2230),         # a0 = mast 1
+    (-9.9419, -11.2230),         # a1 = mast 2
+    (-8.5653,  8.9122),          # a2 = mast 3
+    (11.6463,  13.5339),         # a3 = mast 4
 ]
 
 # --- TCP home: fill ONE, or neither (then the existing start_position is kept) ---
@@ -81,6 +81,20 @@ def _replace_list(text, key, values):
 
 def main():
     anchors_xy = np.array(ANCHORS_XY, dtype=float)
+    # Accept 4x2 [[x,y],...], a flat 8-value [x,y,...], or mast_position.py's flat
+    # 12-value [x,y,z,...] anchors line (the z=0 placeholder is dropped here; the
+    # real z = PULLEY_Z is added below). This makes copy-pasting the anchors line
+    # safe instead of crashing on a shape mismatch.
+    if anchors_xy.ndim == 1:
+        if anchors_xy.size == 12:
+            anchors_xy = anchors_xy.reshape(4, 3)[:, :2]
+        elif anchors_xy.size == 8:
+            anchors_xy = anchors_xy.reshape(4, 2)
+        else:
+            raise ValueError(
+                f"ANCHORS_XY has {anchors_xy.size} values; expected 8 (x,y) or 12 (x,y,z)")
+    if anchors_xy.shape != (4, 2):
+        raise ValueError(f"ANCHORS_XY must be 4x2, got shape {anchors_xy.shape}")
     anchors = np.column_stack([anchors_xy, np.full(4, PULLEY_Z)])
 
     new_start = None
@@ -128,7 +142,7 @@ def main():
         "~/wirehawk/src/wirehawk_gazebo/worlds/wirehawk_world_field.sdf")
     if os.path.exists(sdf_path):
         txt = open(sdf_path).read()
-        for i, (x, y) in enumerate(ANCHORS_XY, start=1):
+        for i, (x, y) in enumerate(anchors_xy, start=1):
             txt = re.sub(rf'(<model name="pillar_{i}">\s*<static>true</static>\s*<pose>)[^<]+(</pose>)',
                          rf'\g<1>{x:.4f} {y:.4f} 1.5 0 0 0\g<2>', txt, count=1, flags=re.S)
         if new_start is not None:

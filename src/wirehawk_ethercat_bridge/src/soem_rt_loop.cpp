@@ -238,6 +238,13 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
     // until the bridge is restarted (the field oscillation moved drives 4-9 m
     // off-target; this stops that the instant it begins).
     bool watchdog_tripped = false;
+    // Pre-tension phase: wind each cable in until it comes taut (its |torque|
+    // rises over the slack level), so the controller's FK reads a taut system
+    // instead of slack lengths that triangulate below the floor.
+    bool pre_tensioning = (g_cfg.pre_tension_torque > 0 && g_cfg.pre_tension_step > 0);
+    bool taut[MAX_MOTORS] = {false};
+    int16_t slack_torque[MAX_MOTORS] = {0};
+    bool slack_recorded[MAX_MOTORS] = {false};
     for (int i = 0; i < N; i++) {
         motion[i].cmd = tx[i]->position_actual;
         motion[i].vel = 0.0;
@@ -321,26 +328,42 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                 motion[i].vel = 0.0;
                 rx[i]->target_position = motion[i].cmd;
                 all_enabled = false;
-            } else if (state == 0x0027) {            // operation enabled -> stream
-                int32_t tgt = motion[i].cmd;
-                if (data->target_valid.load()) {
-                    tgt = target[i];   // raw counts — the ROS node already converted free span -> raw
+            } else if (state == 0x0027) {            // operation enabled
+                if (pre_tensioning && !taut[i]) {
+                    // Pre-tension: wind in (direction[] maps the sign) and watch
+                    // the |torque| rise over its recorded slack level — the cable
+                    // is taut once the rise crosses pre_tension_torque.
+                    if (!slack_recorded[i]) {
+                        slack_torque[i] = tx[i]->torque_actual;
+                        slack_recorded[i] = true;
+                    }
+                    motion[i].cmd += g_cfg.direction[i] * g_cfg.pre_tension_step;
+                    int tq = (int)tx[i]->torque_actual;   tq = tq < 0 ? -tq : tq;
+                    int sq = (int)slack_torque[i];        sq = sq < 0 ? -sq : sq;
+                    if (tq - sq >= g_cfg.pre_tension_torque) {
+                        taut[i] = true;
+                    }
+                } else {
+                    int32_t tgt = motion[i].cmd;
+                    if (data->target_valid.load()) {
+                        tgt = target[i];   // raw counts — the ROS node already converted free span -> raw
+                    }
+                    // Max-step guard: never command a target more than max_step
+                    // counts from the current physical position. A wrong
+                    // calibration/direction can produce a target ~2x the cable
+                    // length away (a runaway wind-in that broke a spool in the
+                    // field); clamp any single command to a safe travel.
+                    if (g_cfg.max_step > 0) {
+                        int64_t cur = (int64_t)tx[i]->position_actual;
+                        int64_t t64 = (int64_t)tgt;
+                        if (t64 > cur + g_cfg.max_step) t64 = cur + g_cfg.max_step;
+                        if (t64 < cur - g_cfg.max_step) t64 = cur - g_cfg.max_step;
+                        tgt = (int32_t)t64;
+                    }
+                    step_trapezoid(motion[i], tgt, target_vel[i],
+                                   g_cfg.max_speed, g_cfg.max_accel,
+                                   g_cfg.pos_feedback_gain, dt);
                 }
-                // Max-step guard: never command a target more than max_step
-                // counts from the current physical position. A wrong
-                // calibration/direction can produce a target ~2x the cable
-                // length away (a runaway wind-in that broke a spool in the
-                // field); clamp any single command to a safe travel.
-                if (g_cfg.max_step > 0) {
-                    int64_t cur = (int64_t)tx[i]->position_actual;
-                    int64_t t64 = (int64_t)tgt;
-                    if (t64 > cur + g_cfg.max_step) t64 = cur + g_cfg.max_step;
-                    if (t64 < cur - g_cfg.max_step) t64 = cur - g_cfg.max_step;
-                    tgt = (int32_t)t64;
-                }
-                step_trapezoid(motion[i], tgt, target_vel[i],
-                               g_cfg.max_speed, g_cfg.max_accel,
-                               g_cfg.pos_feedback_gain, dt);
                 // Following-error watchdog: if the drive has strayed far from
                 // the target, it is NOT following (DCSYNC/EtherCAT glitch, or a
                 // runaway interpolator). Disable all motors and latch.
@@ -371,6 +394,14 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                 rx[i]->control_word = 0x000F;
             } else {
                 all_enabled = false;
+            }
+        }
+        if (pre_tensioning) {
+            bool all_taut = true;
+            for (int i = 0; i < N; i++) if (!taut[i]) all_taut = false;
+            if (all_taut) {
+                pre_tensioning = false;
+                printf("RT: pre-tension complete — all cables taut\n");
             }
         }
         data->enabled = all_enabled;

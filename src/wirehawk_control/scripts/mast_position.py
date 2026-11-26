@@ -47,7 +47,7 @@ MEASUREMENTS = {
     "d23": [20.699],        # mast 3 <-> mast 4   (side)
     "d30": [25.175],        # mast 4 <-> mast 1   (side)
     "d02": [25.415],        # mast 1 <-> mast 3   (diagonal)
-    "d13": [31.494],        # mast 2 <-> mast 4   (diagonal)
+    "d13": [32.910],        # mast 2 <-> mast 4   (diagonal)
 }
 
 # Field-frame transform: +x = "right" (standing behind mast 1), +y = "up",
