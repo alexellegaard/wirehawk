@@ -328,9 +328,16 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                 all_enabled = false;
             } else if (state == 0x0027) {            // operation enabled
                 if (pre_tensioning && !taut[i]) {
-                    // Pre-tension: wind in (direction[] maps the sign) until the
-                    // absolute |torque| reaches pre_tension_torque.
-                    motion[i].cmd += g_cfg.direction[i] * g_cfg.pre_tension_step;
+                    // Pre-tension: wind in SMOOTHLY (a velocity feedforward the
+                    // trapezoid ramps up to pre_tension_step/dt, bounded by
+                    // max_accel) until the absolute |torque| reaches
+                    // pre_tension_torque. Stepping the target directly bounces the
+                    // drive on the slack cable, and that transient torque trips the
+                    // threshold instantly — a velocity command has no such spike.
+                    double wind_vel = g_cfg.direction[i] * ((double)g_cfg.pre_tension_step / dt);
+                    step_trapezoid(motion[i], motion[i].cmd, wind_vel,
+                                   g_cfg.max_speed, g_cfg.max_accel,
+                                   g_cfg.pos_feedback_gain, dt);
                     int tq = (int)tx[i]->torque_actual;   tq = tq < 0 ? -tq : tq;
                     if (tq >= g_cfg.pre_tension_torque) {
                         taut[i] = true;
