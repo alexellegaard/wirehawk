@@ -44,3 +44,6 @@ ethercat_bridge:
     max_following_error: 1000000 # counts (~0.48 m): watchdog. If a drive's actual position strays this far from its
                                  # commanded target, the bridge disables ALL motors and latches until restart.
                                  # 0 = disabled.
+    max_torque: 300              # torque watchdog (0.1% rated: 1000 = 100% rated). If any drive's |0x6077| exceeds
+                                 # this, disable ALL motors + latch until restart. 0 = disabled.
+                                 # TUNE: set ~2-3x the observed holding torque at 1 kg (watch /real/state/motors).

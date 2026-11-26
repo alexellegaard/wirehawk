@@ -353,6 +353,20 @@ int soem_rt_loop(const Config& cfg, BridgeData* data)
                                i, (long long)fe, (long long)g_cfg.max_following_error);
                     }
                 }
+                // Torque watchdog: a drive pulling more than max_torque while
+                // still tracking position is over-tensioned (winding against a
+                // taut cable / the floor). The position watchdog above does NOT
+                // catch this — position follows the target, torque is what
+                // spikes. Disable all motors and latch.
+                {
+                    int16_t tq = tx[i]->torque_actual;
+                    if (g_cfg.max_torque > 0 &&
+                        (tq > g_cfg.max_torque || tq < -g_cfg.max_torque)) {
+                        watchdog_tripped = true;
+                        printf("RT: WATCHDOG motor %d torque %d > %d — DISABLING ALL MOTORS\n",
+                               i, (int)tq, (int)g_cfg.max_torque);
+                    }
+                }
                 rx[i]->target_position = motion[i].cmd;
                 rx[i]->control_word = 0x000F;
             } else {

@@ -94,6 +94,7 @@ struct Config {
     std::array<int, MAX_MOTORS> direction{};       // winding sign: +1 normal, -1 reversed
     int64_t max_step = 0;                         // counts: max travel a single command may demand (0 = disabled)
     int64_t max_following_error = 1000000;        // counts (~0.48 m): watchdog — disable all motors on violation
+    int16_t max_torque = 0;                       // 0.1%-rated torque units: watchdog — disable all motors on |0x6077| exceed (0 = disabled)
 };
 
 // raw 0x6064 -> free-span cable length [m] (anchor/pulley -> TCP). The bridge
