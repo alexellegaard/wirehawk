@@ -17,7 +17,7 @@ cdpr_node:
   ros__parameters:
     anchors: [7.3222, -11.1349, 3.0000, -9.2198, -11.1349, 3.0000, -9.0137, 8.7221, 3.0000, 10.9113, 13.5478, 3.0000]
     start_position: [1.0966, -1.1147, 1.2000]
-    workspace_min: [-8.2198, -10.1349, 0.3000]
+    workspace_min: [-8.2198, -10.1349, -2.5000]   # TEMP: z lowered below the slack hang so the FK can latch; restore 0.3 once the TCP is raised
     workspace_max: [9.9113, 12.5478, 2.7000]
     max_linear_speed: 0.2
     max_linear_accel: 0.2
