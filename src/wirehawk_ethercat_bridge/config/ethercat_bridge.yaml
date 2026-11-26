@@ -33,7 +33,8 @@ ethercat_bridge:
     # 2=mast3, 3=mast4 — the CW daisy-chain). Logged once via log_zeros.py; only
     # changes if a spool is replaced or a drive is re-homed. Battery-backed
     # multi-turn encoder => survives power cycles.
-    zero_ticks: [-159866262, 13605204, -137708708, -72631542]
+    zero_ticks: [-159866262, -72631542, -137708708, 13605204]
+
     direction: [-1, -1, -1, -1]  # per-motor winding sign: +1 = normal (positive counts = cable winds IN),
                                  # -1 = reversed. Negates that motor's logical counts on both command and
                                  # feedback. SIM DOESN'T NEED THIS (always forward).
