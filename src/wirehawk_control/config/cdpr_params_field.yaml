@@ -27,7 +27,7 @@ cdpr_node:
     rate_hz: 50.0
     cmd_timeout: 0.2
     cable_axial_stiffness: 98100.0
-    payload_mass: 1.0             # test mass 1.0 kg (container + liquid); real payload 0.5-5 kg under evaluation
+    payload_mass: 0.75             # test mass 1.0 kg (container + liquid); real payload 0.5-5 kg under evaluation
     tcp_attachment_length: 0.0   # [m] elastic bands REMOVED for the 1.0 kg test (bands can't hold the mass).
                                  # Bridge reports anchor->TCP directly, so no offset is added.
     fk_gain: 0.5
