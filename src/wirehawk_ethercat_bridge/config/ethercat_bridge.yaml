@@ -20,7 +20,10 @@ ethercat_bridge:
     pos_feedback_gain: 20.0      # 1/s: position drift correction on top of the interpolator's velocity
                                  # feedforward. Feedforward = d(cmd)/dt at the 100 Hz command rate; this
                                  # small term closes residual position drift without the sawtooth.
-    gear_ratio: 1.0              # motor revolutions per drum revolution
+    gear_ratio: 1.068            # CALIBRATION (NOT the mechanical ratio): the bridge's counts->length scale
+                                 # read ~6.8% high vs laser-measured cable lengths. Mechanical coupling is 1:1
+                                 # (direct drive); the scale is the drive's position scaling (electronic gear),
+                                 # so 1.068 = 140000/131072 corrects it. Verify the electronic-gear SDO to confirm.
     mast_run: 3.0                # winch-drum -> top-pulley cable [m]. The fixed cable that is always out,
                                  # independent of the TCP. The bridge subtracts it, so it publishes the free
                                  # span (anchor/pulley -> TCP), never the total paid-out length.
